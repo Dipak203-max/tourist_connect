@@ -1,0 +1,15 @@
+package com.touristconnect.entity;
+
+public enum AdminActivityType {
+    USER_REGISTERED,
+    BOOKING_CREATED,
+    BOOKING_COMPLETED,
+    BOOKING_CANCELLED,
+    PAYMENT_SUCCESS,
+    PAYMENT_FAILED,
+    GUIDE_VERIFIED,
+    GUIDE_REJECTED,
+    GUIDE_PROFILE_UPDATED,
+    DESTINATION_ADDED,
+    REPORT_GENERATED
+}

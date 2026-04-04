@@ -1,0 +1,15 @@
+package com.touristconnect.entity;
+
+public enum NotificationType {
+    MESSAGE,
+    GROUP_INVITE,
+    FRIEND_REQUEST,
+    FRIEND_ACCEPTED,
+    SYSTEM,
+    GUIDE_VERIFIED,
+    GUIDE_REJECTED,
+    BOOKING_REQUESTED,
+    BOOKING_CONFIRMED,
+    BOOKING_REJECTED,
+    BOOKING_CANCELLED
+}
