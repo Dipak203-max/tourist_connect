@@ -15,14 +15,26 @@ const Register = () => {
     const [error, setError] = useState('');
 
     const handleEmailSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await register(email, password, role);
-            navigate('/verify-otp', { state: { email } });
-        } catch {
-            setError('Registration failed. Email might be in use or password too weak. (Min 8 chars, 1 Upper, 1 Lower, 1 Number, 1 Special)');
-        }
-    };
+    e.preventDefault();
+    try {
+        const response = await register(email, password, role);
+
+        console.log("REGISTER RESPONSE:", response.data); // debug
+
+        // ✅ Use backend email (more reliable)
+        const returnedEmail = response.data?.email || email;
+
+        navigate('/verify-otp', { state: { email: returnedEmail } });
+
+    } catch (err) {
+        console.error("REGISTER ERROR:", err.response || err);
+
+        setError(
+            err.response?.data?.message ||
+            'Registration failed. Email might be in use or password too weak.'
+        );
+    }
+};
 
     const handlePhoneSubmit = async (e) => {
         e.preventDefault();

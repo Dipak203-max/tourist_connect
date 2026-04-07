@@ -1,10 +1,6 @@
 package com.touristconnect.service;
 
 import com.touristconnect.config.JwtUtil;
-import com.touristconnect.dto.AuthResponse;
-import com.touristconnect.dto.LoginRequest;
-import com.touristconnect.dto.OtpVerifyRequest;
-import com.touristconnect.dto.RegisterRequest;
 import com.touristconnect.entity.Role;
 import com.touristconnect.entity.User;
 import com.touristconnect.repository.UserRepository;
@@ -59,9 +55,29 @@ public class AuthService {
     private static final JsonFactory jsonFactory = new GsonFactory();
 
     public String register(RegisterRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already in use");
-        }
+        User existingUser = userRepository.findByEmail(request.getEmail()).orElse(null);
+
+if (existingUser != null) {
+    if (existingUser.isEnabled()) {
+        throw new RuntimeException("Email already in use");
+    } else {
+        // 🔁 RESEND OTP for unverified user
+        validatePasswordComplexity(request.getPassword());
+
+        existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
+
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        existingUser.setOtp(otp);
+        existingUser.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+        existingUser.setRole(request.getRole());
+
+        userService.saveUser(existingUser);
+
+        emailService.sendOtpEmail(existingUser.getEmail(), otp);
+
+        return "OTP resent successfully";
+    }
+}
 
         if (request.getRole() == Role.ADMIN) {
             throw new RuntimeException("Admin registration is not allowed");
