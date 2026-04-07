@@ -5,6 +5,7 @@ import com.touristconnect.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -14,9 +15,13 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
-    }
+public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    authService.register(request);
+    return ResponseEntity.ok(Map.of(
+        "message", "OTP sent successfully",
+        "email", request.getEmail()
+    ));
+}
 
     @PostMapping("/verify-otp")
     public ResponseEntity<String> verifyOtp(@RequestBody OtpVerifyRequest request) {
