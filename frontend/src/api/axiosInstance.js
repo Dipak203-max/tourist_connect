@@ -27,9 +27,18 @@ axiosInstance.get = (url, config = {}) => {
 axiosInstance.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+
+// ❌ DO NOT attach token for auth endpoints
+if (
+    token &&
+    !config.url.includes('/auth/login') &&
+    !config.url.includes('/auth/register') &&
+    !config.url.includes('/auth/verify') &&
+    !config.url.includes('/auth/forgot-password') &&
+    !config.url.includes('/auth/reset-password')
+) {
+    config.headers.Authorization = `Bearer ${token}`;
+}
         return config;
     },
     (error) => {
