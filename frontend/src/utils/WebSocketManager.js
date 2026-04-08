@@ -1,29 +1,25 @@
 import SockJS from 'sockjs-client';
 import Stomp from 'stompjs';
 
-/**
- * WebSocketManager
- * A production-grade STOMP client manager with:
- * - Exponential backoff retry strategy
- * - Connection state management
- * - Message queuing
- * - Safe subscription handling
- */
+
 class WebSocketManager {
     constructor() {
         this.stompClient = null;
-        this.status = 'DISCONNECTED'; // DISCONNECTED, CONNECTING, CONNECTED, RETRYING, FAILED
+        this.status = 'DISCONNECTED'; 
         this.statusListeners = new Set();
         
-        this.subscriptions = new Map(); // topic -> Set(callback)
-        this.activeSubscriptions = new Map(); // topic -> stompSubscription
+        this.subscriptions = new Map(); 
+        this.activeSubscriptions = new Map(); 
         
         this.messageQueue = [];
         this.connectionPromise = null;
         
         // Configuration
-        this.baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-        this.socketUrl = this.baseUrl.replace('/api', '') + '/ws-chat';
+       this.baseUrl =
+    import.meta.env.VITE_API_BASE_URL ||
+    'https://touristconnect-production.up.railway.app/api';
+
+this.socketUrl = this.baseUrl.replace('/api', '') + '/ws-chat';
         
         // Retry logic
         this.reconnectAttempts = 0;
@@ -31,7 +27,7 @@ class WebSocketManager {
         this.baseReconnectDelay = 2000;
         this.reconnectTimeoutId = null;
         
-        this.debug = false; // Set to true for development logs
+        this.debug = false; 
     }
 
     /**
@@ -127,10 +123,7 @@ class WebSocketManager {
         }
     }
 
-    /**
-     * Standardized Event Dispatcher
-     * Converts raw STOMP messages into normalized app events
-     */
+
     _dispatchNormalizedEvent(topic, message) {
         try {
             if (!message || message.body === undefined || message.body === null) {
@@ -180,9 +173,9 @@ class WebSocketManager {
         return 'UNKNOWN_EVENT';
     }
 
-    /**
-     * High-level subscription method for React components
-     */
+    
+     // High-level subscription method for React components
+
     subscribe(topic, callback) {
         if (!this.subscriptions.has(topic)) {
             this.subscriptions.set(topic, new Set());
@@ -237,9 +230,9 @@ class WebSocketManager {
         }
     }
 
-    /**
-     * Safe message sending with queueing support
-     */
+    
+     //Safe message sending with queueing support
+     
     send(destination, payload, headers = {}) {
         const body = JSON.stringify(payload);
         
@@ -272,9 +265,9 @@ class WebSocketManager {
         }
     }
 
-    /**
-     * Full cleanup
-     */
+    
+     // Full cleanup
+     
     disconnect() {
         if (this.reconnectTimeoutId) {
             clearTimeout(this.reconnectTimeoutId);
