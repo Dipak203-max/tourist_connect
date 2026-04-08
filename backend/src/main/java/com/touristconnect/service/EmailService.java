@@ -21,7 +21,7 @@ public class EmailService {
 
         Map<String, Object> body = new HashMap<>();
         body.put("from", "TouristConnect <onboarding@resend.dev>");
-        body.put("to", to);
+        body.put("to", "dipaktolangi011@gmail.com");
         body.put("subject", subject);
         body.put("html", htmlContent);
 
