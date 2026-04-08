@@ -40,9 +40,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
         // Use specific origin to avoid issues with credentials + wildcards
-        registry.addEndpoint("/ws-chat")
-                .setAllowedOrigins("http://localhost:5173", "http://localhost:3000") // Add your frontend ports
-                .withSockJS();
+       registry.addEndpoint("/ws-chat")
+        .setAllowedOrigins(
+                "http://localhost:5173",
+                "https://tourist-connect.vercel.app" 
+        )
+        .withSockJS();
     }
 
     @Override
