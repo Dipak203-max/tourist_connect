@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
 import { getGuideProfileByUserId } from '../../api/guideApi';
 import { toast } from 'react-hot-toast';
-import { Calendar, Clock, User, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Calendar, Clock, User, CheckCircle, ArrowLeft, X } from 'lucide-react';
 
 import { getOrCreateConversation } from '../../api/chatApi';
 
@@ -20,34 +20,34 @@ const BookingForm = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-    const fetchData = async () => {
-        try {
-            const guideRes = await getGuideProfileByUserId(guideId);
-            setGuideName(guideRes.guideName || 'Guide');
+        const fetchData = async () => {
+            try {
+                const guideRes = await getGuideProfileByUserId(guideId);
+                setGuideName(guideRes.guideName || 'Guide');
 
-            const toursRes = await axiosInstance.get(`/tours/guide/${guideId}`);
-            setTours(toursRes.data);
+                const toursRes = await axiosInstance.get(`/tours/guide/${guideId}`);
+                setTours(toursRes.data);
 
-            // ✅ FIXED LOGIC
-            if (tourId) {
-                const matched = toursRes.data.find(t => t.id === tourId);
-                if (matched) {
-                    setSelectedTour(matched);
-                    setTourId(matched.id);
+                // FIXED LOGIC
+                if (tourId) {
+                    const matched = toursRes.data.find(t => t.id === tourId);
+                    if (matched) {
+                        setSelectedTour(matched);
+                        setTourId(matched.id);
+                    }
+                } else {
+                    // GUIDE ONLY MODE (no auto-selection)
+                    setSelectedTour(null);
+                    setTourId(null);
                 }
-            } else {
-                // ✅ GUIDE ONLY MODE (no auto-selection)
-                setSelectedTour(null);
-                setTourId(null);
+
+            } catch (err) {
+                console.error("Failed to fetch guide or tours details", err);
             }
+        };
 
-        } catch (err) {
-            console.error("Failed to fetch guide or tours details", err);
-        }
-    };
-
-    if (guideId) fetchData();
-}, [guideId]);
+        if (guideId) fetchData();
+    }, [guideId, tourId]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -58,7 +58,6 @@ const BookingForm = () => {
             date,
             travelers
         });
-
 
         if (!date) {
             toast.error("Please select date");
@@ -133,29 +132,71 @@ const BookingForm = () => {
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                             Select Tour Package
                         </label>
-                        {!tours.length ? (
-                            <p className="text-sm text-gray-500 p-4 border border-dashed rounded-xl bg-gray-50">No tours available for this guide</p>
-                        ) : (
-                            <div className="grid gap-3 max-h-64 overflow-y-auto pr-2 no-scrollbar">
-                                {tours.map(tour => (
-                                    <div
-                                        key={tour.id}
-                                        onClick={() => {
-                                            setSelectedTour(tour);
-                                            setTourId(tour.id);
-                                        }}
-                                        className={`p-4 border rounded-xl cursor-pointer transition-all ${selectedTour?.id === tour.id ? "bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500/20" : "bg-white border-gray-200 hover:border-indigo-300"}`}
-                                    >
-                                        <div className="flex justify-between items-center">
-                                            <span className="font-bold text-gray-900">{tour.title}</span>
-                                            <span className="font-bold text-indigo-600">${tour.pricePerPerson || tour.price} <span className="text-xs text-gray-500 font-normal">/person</span></span>
-                                        </div>
-                                    </div>
-                                ))}
+                        
+                        {/* 🔥 STEP 2: Guide Only selectable option */}
+                        <div
+                            onClick={() => {
+                                setSelectedTour(null);
+                                setTourId(null);
+                            }}
+                            className={`p-4 border rounded-xl cursor-pointer transition-all mb-3 ${
+                                selectedTour === null
+                                    ? "bg-emerald-50 border-emerald-500 ring-2 ring-emerald-200"
+                                    : "bg-white border-gray-200 hover:border-emerald-300"
+                            }`}
+                        >
+                            <div className="flex justify-between items-center">
+                                <span className="font-bold text-gray-900">Guide Only (No Tour)</span>
+                                {selectedTour === null && (
+                                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                                )}
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Base rate will apply (guide's standard fee)
+                            </p>
+                        </div>
+
+                        {/* 🔥 STEP 1: Show Guide Only indicator when active */}
+                        {selectedTour === null && (
+                            <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-semibold flex items-center gap-2">
+                                <CheckCircle className="w-5 h-5" />
+                                Guide Only booking selected (Base rate will apply)
                             </div>
                         )}
-                        {selectedTour && (
-                            <div className="mt-3 text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg inline-block">
+
+                        {/* 🔥 STEP 3: Hide tours when guide-only (optional but BEST) */}
+                        {selectedTour !== null && (
+                            <>
+                                {!tours.length ? (
+                                    <p className="text-sm text-gray-500 p-4 border border-dashed rounded-xl bg-gray-50">No tours available for this guide</p>
+                                ) : (
+                                    <div className="grid gap-3 max-h-64 overflow-y-auto pr-2 no-scrollbar">
+                                        {tours.map(tour => (
+                                            <div
+                                                key={tour.id}
+                                                onClick={() => {
+                                                    setSelectedTour(tour);
+                                                    setTourId(tour.id);
+                                                }}
+                                                className={`p-4 border rounded-xl cursor-pointer transition-all ${selectedTour?.id === tour.id ? "bg-indigo-50 border-indigo-500 ring-2 ring-indigo-500/20" : "bg-white border-gray-200 hover:border-indigo-300"}`}
+                                            >
+                                                <div className="flex justify-between items-center">
+                                                    <span className="font-bold text-gray-900">{tour.title}</span>
+                                                    <span className="font-bold text-indigo-600">${tour.pricePerPerson || tour.price} <span className="text-xs text-gray-500 font-normal">/person</span></span>
+                                                </div>
+                                                {tour.duration && (
+                                                    <p className="text-xs text-gray-500 mt-1">Duration: {tour.duration}</p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {selectedTour && selectedTour !== null && (
+                            <div className="mt-3 text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-2 rounded-lg inline-flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4" />
                                 Selected: {selectedTour.title}
                             </div>
                         )}
@@ -195,7 +236,8 @@ const BookingForm = () => {
                         </div>
                     </div>
 
-                    {selectedTour && (
+                    {/* Price calculation - only show if tour is selected */}
+                    {selectedTour && selectedTour !== null ? (
                         <div className="mt-8 p-6 bg-surface-50 dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700">
                             <div className="flex justify-between text-sm font-bold text-surface-600 dark:text-surface-400 mb-4 uppercase tracking-widest">
                                 <span>${selectedTour?.pricePerPerson || selectedTour?.price || 0} x {travelers} guests</span>
@@ -205,6 +247,18 @@ const BookingForm = () => {
                                 <span className="text-lg font-black uppercase tracking-tight text-surface-900 dark:text-surface-100">Total</span>
                                 <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
                                     ${(selectedTour?.pricePerPerson || selectedTour?.price || 0) * travelers}
+                                </span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="mt-8 p-6 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                            <div className="flex justify-between items-end">
+                                <div>
+                                    <span className="text-lg font-black uppercase tracking-tight text-surface-900 dark:text-surface-100">Guide Only Booking</span>
+                                    <p className="text-sm text-gray-600 mt-1">Price will be confirmed by guide</p>
+                                </div>
+                                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                    Custom pricing applies
                                 </span>
                             </div>
                         </div>
