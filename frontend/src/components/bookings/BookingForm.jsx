@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
 import { getGuideProfileByUserId } from '../../api/guideApi';
 import { toast } from 'react-hot-toast';
-import { Calendar, Clock, User, CheckCircle, ArrowLeft, X } from 'lucide-react';
+import { Calendar, Clock, User, CheckCircle, ArrowLeft } from 'lucide-react';
 
 import { getOrCreateConversation } from '../../api/chatApi';
 
@@ -12,18 +12,21 @@ const BookingForm = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [guideName, setGuideName] = useState('Guide');
+    const [guidePrice, setGuidePrice] = useState(0); 
     const [tourId, setTourId] = useState(Number(location.state?.tourId) || null);
     const [date, setDate] = useState(location.state?.date || '');
     const [travelers, setTravelers] = useState(Number(location.state?.guests) || 1);
     const [tours, setTours] = useState([]);
     const [selectedTour, setSelectedTour] = useState(null);
     const [loading, setLoading] = useState(false);
+    
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const guideRes = await getGuideProfileByUserId(guideId);
                 setGuideName(guideRes.guideName || 'Guide');
+                setGuidePrice(guideRes.price || 0); // ✅ STEP 2: Set guide price from API
 
                 const toursRes = await axiosInstance.get(`/tours/guide/${guideId}`);
                 setTours(toursRes.data);
@@ -133,7 +136,7 @@ const BookingForm = () => {
                             Select Tour Package
                         </label>
                         
-                        {/* 🔥 STEP 2: Guide Only selectable option */}
+                        {/* Guide Only selectable option */}
                         <div
                             onClick={() => {
                                 setSelectedTour(null);
@@ -152,19 +155,19 @@ const BookingForm = () => {
                                 )}
                             </div>
                             <p className="text-sm text-gray-500 mt-1">
-                                Base rate will apply (guide's standard fee)
+                                ${guidePrice} per day (guide's standard fee)
                             </p>
                         </div>
 
-                        {/* 🔥 STEP 1: Show Guide Only indicator when active */}
+                        {/* Show Guide Only indicator when active */}
                         {selectedTour === null && (
                             <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-semibold flex items-center gap-2">
                                 <CheckCircle className="w-5 h-5" />
-                                Guide Only booking selected (Base rate will apply)
+                                Guide Only booking selected (${guidePrice} per day)
                             </div>
                         )}
 
-                        {/* 🔥 STEP 3: Hide tours when guide-only (optional but BEST) */}
+                        {/* Hide tours when guide-only */}
                         {selectedTour !== null && (
                             <>
                                 {!tours.length ? (
@@ -236,7 +239,7 @@ const BookingForm = () => {
                         </div>
                     </div>
 
-                    {/* Price calculation - only show if tour is selected */}
+                    {/* Price calculation - show tour price if tour selected, otherwise show guide price */}
                     {selectedTour && selectedTour !== null ? (
                         <div className="mt-8 p-6 bg-surface-50 dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700">
                             <div className="flex justify-between text-sm font-bold text-surface-600 dark:text-surface-400 mb-4 uppercase tracking-widest">
@@ -251,14 +254,19 @@ const BookingForm = () => {
                             </div>
                         </div>
                     ) : (
+                        // ✅ STEP 3: Replace GUIDE ONLY UI with price calculation
                         <div className="mt-8 p-6 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200 dark:border-emerald-800">
-                            <div className="flex justify-between items-end">
+                            <div className="flex justify-between text-sm font-bold text-surface-600 dark:text-surface-400 mb-4 uppercase tracking-widest">
+                                <span>${guidePrice} x {travelers} travelers</span>
+                                <span>${guidePrice * travelers}</span>
+                            </div>
+                            <div className="pt-4 border-t border-emerald-200 dark:border-emerald-800 flex justify-between items-end">
                                 <div>
-                                    <span className="text-lg font-black uppercase tracking-tight text-surface-900 dark:text-surface-100">Guide Only Booking</span>
-                                    <p className="text-sm text-gray-600 mt-1">Price will be confirmed by guide</p>
+                                    <span className="text-lg font-black uppercase tracking-tight text-surface-900 dark:text-surface-100">Total (per day)</span>
+                                    <p className="text-xs text-gray-500 mt-1">Guide's daily rate</p>
                                 </div>
-                                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                                    Custom pricing applies
+                                <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                                    ${guidePrice * travelers}
                                 </span>
                             </div>
                         </div>
@@ -275,8 +283,8 @@ const BookingForm = () => {
 
                     <button
                         type="submit"
-                        disabled={loading || !date || travelers < 1}
-                        className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-white font-bold text-base transition-all duration-300 transform active:scale-[0.98] ${(loading || !date || travelers < 1)
+                        disabled={loading || !date || travelers < 1 || (selectedTour === null && guidePrice === 0)}
+                        className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-white font-bold text-base transition-all duration-300 transform active:scale-[0.98] ${(loading || !date || travelers < 1 || (selectedTour === null && guidePrice === 0))
                             ? 'bg-gray-400 cursor-not-allowed shadow-none'
                             : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-200 hover:shadow-indigo-300'
                             }`}
