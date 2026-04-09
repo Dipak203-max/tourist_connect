@@ -20,35 +20,34 @@ const BookingForm = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const guideRes = await getGuideProfileByUserId(guideId);
-                setGuideName(guideRes.guideName || 'Guide');
+    const fetchData = async () => {
+        try {
+            const guideRes = await getGuideProfileByUserId(guideId);
+            setGuideName(guideRes.guideName || 'Guide');
 
-                const toursRes = await axiosInstance.get(`/tours/guide/${guideId}`);
-                setTours(toursRes.data);
+            const toursRes = await axiosInstance.get(`/tours/guide/${guideId}`);
+            setTours(toursRes.data);
 
-                // Auto-select or match tour logic
-                if (tourId) {
-                    const matched = toursRes.data.find(t => t.id === tourId);
-                    if (matched) {
-                        setSelectedTour(matched);
-                        setTourId(matched.id);
-                    } else if (toursRes.data.length > 0) {
-                        setSelectedTour(toursRes.data[0]);
-                        setTourId(toursRes.data[0].id);
-                    }
-                } else if (toursRes.data.length > 0) {
-                    setSelectedTour(toursRes.data[0]);
-                    setTourId(toursRes.data[0].id);
+            // ✅ FIXED LOGIC
+            if (tourId) {
+                const matched = toursRes.data.find(t => t.id === tourId);
+                if (matched) {
+                    setSelectedTour(matched);
+                    setTourId(matched.id);
                 }
-
-            } catch (err) {
-                console.error("Failed to fetch guide or tours details", err);
+            } else {
+                // ✅ GUIDE ONLY MODE (no auto-selection)
+                setSelectedTour(null);
+                setTourId(null);
             }
-        };
-        if (guideId) fetchData();
-    }, [guideId]);
+
+        } catch (err) {
+            console.error("Failed to fetch guide or tours details", err);
+        }
+    };
+
+    if (guideId) fetchData();
+}, [guideId]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -60,10 +59,6 @@ const BookingForm = () => {
             travelers
         });
 
-        if (!tourId) {
-            toast.error("Invalid tour selected");
-            return;
-        }
 
         if (!date) {
             toast.error("Please select date");
@@ -86,7 +81,7 @@ const BookingForm = () => {
         try {
             await axiosInstance.post('/bookings', {
                 guideId: Number(guideId),
-                tourId: Number(tourId),
+                tourId: tourId ? Number(tourId) : null,
                 date,
                 travelers
             });
@@ -226,8 +221,8 @@ const BookingForm = () => {
 
                     <button
                         type="submit"
-                        disabled={loading || !tourId || !date || travelers < 1}
-                        className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-white font-bold text-base transition-all duration-300 transform active:scale-[0.98] ${(loading || !tourId || !date || travelers < 1)
+                        disabled={loading || !date || travelers < 1}
+                        className={`w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-white font-bold text-base transition-all duration-300 transform active:scale-[0.98] ${(loading || !date || travelers < 1)
                             ? 'bg-gray-400 cursor-not-allowed shadow-none'
                             : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-200 hover:shadow-indigo-300'
                             }`}
