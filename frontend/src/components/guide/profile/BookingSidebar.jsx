@@ -39,9 +39,9 @@ const BookingSidebar = ({ guide, selectedTour, onBook }) => {
             {selectedTour ? (
                 <p className="font-black text-surface-900 dark:text-surface-100 text-sm truncate">{selectedTour.title}</p>
             ) : (
-                <p className="text-red-500 font-bold text-sm flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" /> Please select a tour
-                </p>
+                <p className="font-bold text-surface-900 dark:text-surface-100 text-sm">
+  {selectedTour ? selectedTour.title : "Guide Only (Base Rate)"}
+</p>
             )}
         </div>
 
@@ -99,10 +99,10 @@ const BookingSidebar = ({ guide, selectedTour, onBook }) => {
           variant="primary"
           size="lg"
           onClick={() => onBook(guests, selectedDate)}
-          disabled={!selectedTour}
+          disabled={!selectedDate}
           className="w-full py-5 rounded-[1.5rem] text-lg font-black uppercase tracking-widest shadow-2xl shadow-primary-200 dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
         >
-          {selectedTour ? 'Book Experience' : 'Select a Tour'}
+          {selectedTour ? 'Book Experience' : 'Book Guide'}
         </Button>
 
         <p className="text-[10px] text-center text-surface-400 font-bold uppercase tracking-widest mt-6 leading-relaxed">
