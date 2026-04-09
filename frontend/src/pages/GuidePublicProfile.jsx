@@ -75,18 +75,15 @@ if (toursRes.data && toursRes.data.length > 0) {
     };
 
     const handleBookClick = (guests, date) => {
-        if (!selectedTour) {
-            toast.error("Please select a tour experience first.");
-            return;
-        }
-        navigate(`/tourist/book/${userId}`, { 
-            state: { 
-                tourId: Number(selectedTour.id), 
-                date: date, 
-                guests: Number(guests) 
-            } 
-        });
-    };
+    // Allow booking without tour
+    navigate(`/tourist/book/${userId}`, { 
+        state: { 
+            tourId: selectedTour ? Number(selectedTour.id) : null,
+            date: date, 
+            guests: Number(guests) 
+        } 
+    });
+};
 
     if (loading) return <PageLoader />;
     if (error) return (
