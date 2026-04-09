@@ -51,10 +51,6 @@ const fullData = {
 
 setData(fullData);
 
-// Auto-select first tour
-if (toursRes.data && toursRes.data.length > 0) {
-    setSelectedTour(toursRes.data[0]);
-}
 
                 if (user && user.id != effectiveUserId) {
                     const statusRes = await getFriendshipStatus(effectiveUserId);
@@ -75,7 +71,6 @@ if (toursRes.data && toursRes.data.length > 0) {
     };
 
     const handleBookClick = (guests, date) => {
-    // Allow booking without tour
     navigate(`/tourist/book/${userId}`, { 
         state: { 
             tourId: selectedTour ? Number(selectedTour.id) : null,
@@ -148,6 +143,20 @@ if (toursRes.data && toursRes.data.length > 0) {
                                 </div>
                                 <span className="text-xs font-black text-surface-400 uppercase tracking-widest">{tours.length} Experiences</span>
                             </div>
+
+                            <div 
+    onClick={() => setSelectedTour(null)}
+    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+        selectedTour === null 
+        ? 'border-blue-500 bg-blue-50' 
+        : 'border-gray-200'
+    }`}
+>
+    <h3 className="font-bold text-lg">Guide Only (No Tour)</h3>
+    <p className="text-sm text-gray-500">
+        Book the guide at base rate (${guide.price}/day)
+    </p>
+</div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {tours.map(tour => (
