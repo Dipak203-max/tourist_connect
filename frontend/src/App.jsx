@@ -87,8 +87,10 @@ function App() {
 
                         {/* Public Routes */}
                         <Route path="/about" element={<About />} />
-                        <Route path="/destinations" element={<PublicLayout><Destinations /></PublicLayout>} />
-                        <Route path="/destinations/:id" element={<PublicLayout><DestinationDetails /></PublicLayout>} />
+                       <Route path="/destinations" element={<PublicLayout />}>
+  <Route index element={<Destinations />} />
+  <Route path=":id" element={<DestinationDetails />} />
+</Route>
                         <Route path="/public/itinerary/:token" element={<PublicItineraryView />} />
 
                         {/* ADMIN Routes */}
