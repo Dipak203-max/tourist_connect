@@ -37,7 +37,7 @@ def fetch_all_data(lat: float, lng: float, radius: int = 8000):
     out center;
     """
     try:
-        response = requests.get("https://overpass.kumi.systems/api/interpreter", params={"data": query}, timeout=30)
+        response = requests.get("https://overpass-api.de/api/interpreter", params={"data": query}, timeout=30)
         if response.status_code != 200:
             return []
         data = response.json()
@@ -81,29 +81,9 @@ def calculate_score(place, user_lat, user_lon, history):
 
 @app.post("/recommend")
 async def recommend(request: RecommendRequest):
-    print("REQUEST:", request)
-    
-    all_data = fetch_all_data(request.lat, request.lng)
-    print("FETCHED DATA COUNT:", len(all_data))
-    
-    # ✅ FIX 2 — ADD HARD FALLBACK (CRITICAL)
-    if not all_data:
-        print("⚠️ No data from Overpass")
-        
-        return {
-            "restaurants": [
-                {"name": "Kathmandu Restaurant", "lat": request.lat, "lon": request.lng, "type": "restaurant", "relevance_score": 5}
-            ],
-            "activities": [
-                {"name": "City Walk", "lat": request.lat, "lon": request.lng, "type": "activity", "relevance_score": 5}
-            ],
-            "places": [
-                {"name": "Local Attraction", "lat": request.lat, "lon": request.lng, "type": "place", "relevance_score": 5}
-            ]
-        }
-    
     try:
-        # ✅ FIX 1 — REMOVE duplicate API call (no second fetch_all_data call here)
+        all_data = fetch_all_data(request.lat, request.lng)
+        
         restaurants, activities, places = [], [], []
         seen = set()
 
@@ -121,13 +101,13 @@ async def recommend(request: RecommendRequest):
             p["relevance_score"] = calculate_score(p, request.lat, request.lng, request.history)
             
             # 🍔 RESTAURANTS
-            if "restaurant" in amenity or "cafe" in amenity:
+            if amenity in ["restaurant", "cafe"]:
                 p["type"] = amenity
                 restaurants.append(p)
             
-            # 🌳 ACTIVITIES - ✅ FIX 3 — RELAX ACTIVITIES FILTER (VERY IMPORTANT)
-            if tourism or leisure or historic:
-                p["type"] = tourism or leisure or historic or "activity"
+            # 🌳 ACTIVITIES (Flexible matching)
+            if tourism in ["museum", "gallery", "zoo"] or leisure in ["park", "garden", "nature_reserve", "playground"] or historic:
+                p["type"] = leisure or tourism or historic or "activity"
                 activities.append(p)
             
             # 📍 PLACES / ATTRACTIONS
@@ -151,18 +131,8 @@ async def recommend(request: RecommendRequest):
         }
     except Exception as e:
         print("ERROR:", e)
-        # Return fallback on error too
-        return {
-            "restaurants": [
-                {"name": "Kathmandu Restaurant", "lat": request.lat, "lon": request.lng, "type": "restaurant", "relevance_score": 5}
-            ],
-            "activities": [
-                {"name": "City Walk", "lat": request.lat, "lon": request.lng, "type": "activity", "relevance_score": 5}
-            ],
-            "places": [
-                {"name": "Local Attraction", "lat": request.lat, "lon": request.lng, "type": "place", "relevance_score": 5}
-            ]
-        }
+        return {"restaurants": [], "activities": [], "places": []}
+
 
 if __name__ == "__main__":
     import uvicorn
