@@ -1,44 +1,59 @@
 package com.touristconnect.service;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
-@Slf4j
 public class EmailService {
 
-    @Autowired
-    private JavaMailSender mailSender;
+    @Value("${RESEND_API_KEY}")
+    private String apiKey;
 
-    public void sendOtpEmail(String to, String otp) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(to);
-            message.setSubject("TouristConnect Verification OTP");
-            message.setText("Your verification OTP is: " + otp + "\n\nThis OTP expires in 5 minutes.");
-            mailSender.send(message);
-            log.info("OTP email sent successfully to {}", to);
-        } catch (Exception e) {
-            log.error("Failed to send OTP email to {}: {}", to, e.getMessage());
-            throw new RuntimeException("Email delivery failed. Please check your internet connection or try again later.");
-        }
+    private final String RESEND_URL = "https://api.resend.com/emails";
+
+    private void sendEmail(String to, String subject, String htmlContent) {
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("from", "TouristConnect <onboarding@resend.dev>");
+        body.put("to", "dipaktolangi011@gmail.com");
+        body.put("subject", subject);
+        body.put("html", htmlContent);
+
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.set("Authorization", "Bearer " + apiKey);
+        headers.set("Content-Type", "application/json");
+
+        org.springframework.http.HttpEntity<Map<String, Object>> request =
+                new org.springframework.http.HttpEntity<>(body, headers);
+
+        restTemplate.postForEntity(RESEND_URL, request, String.class);
+
+        System.out.println("✅ Email sent to: " + to);
     }
 
-    public void sendResetTokenEmail(String to, String otp) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(to);
-            message.setSubject("TouristConnect Password Reset");
-            message.setText(
-                    "To reset your password, use the following OTP: " + otp + "\n\nThis OTP expires in 15 minutes.");
-            mailSender.send(message);
-            log.info("Reset email sent successfully to {}", to);
-        } catch (Exception e) {
-            log.error("Failed to send reset email to {}: {}", to, e.getMessage());
-            throw new RuntimeException("Email delivery failed. Please check your internet connection or try again later.");
-        }
+    // ✅ SAME METHOD (OTP)
+    public void sendOtpEmail(String to, String otp) {
+        String html =
+                "<h2>TouristConnect OTP</h2>" +
+                "<p>Your OTP is: <b>" + otp + "</b></p>" +
+                "<p>This OTP expires in 5 minutes.</p>";
+
+        sendEmail(to, "TouristConnect Verification OTP", html);
+    }
+
+    // ✅ SAME METHOD (RESET)
+    public void sendResetTokenEmail(String to, String token) {
+        String html =
+                "<h2>Password Reset</h2>" +
+                "<p>Your reset token is: <b>" + token + "</b></p>" +
+                "<p>This token expires in 15 minutes.</p>";
+
+        sendEmail(to, "TouristConnect Password Reset", html);
     }
 }
