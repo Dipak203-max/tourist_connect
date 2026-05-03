@@ -4,17 +4,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { toggleLike, addComment, deletePost } from '../../api/postApi';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import { getMediaUrl } from '../../config';
+
 
 const PostCard = ({ post, onPostDeleted }) => {
     const { id, userId, username, fullName, profilePictureUrl, content, mediaUrl, mediaType, location, feeling, createdAt, likeCount: initialLikeCount, commentCount: initialCommentCount, isLikedByCurrentUser, comments: initialComments } = post;
     const { user: currentUser } = useAuth();
-    const API_BASE_URL = "http://localhost:8080";
-
     const getFullUrl = (url) => {
-        if (!url) return null;
-        if (url.startsWith('http')) return url;
-        return `${API_BASE_URL}${url}`;
+        return getMediaUrl(url);
     };
+
 
     const [isLiked, setIsLiked] = useState(isLikedByCurrentUser);
     const [likeCount, setLikeCount] = useState(initialLikeCount || 0);
@@ -156,19 +155,20 @@ const PostCard = ({ post, onPostDeleted }) => {
                 <div className="bg-surface-100 dark:bg-surface-800 border-y border-gray-50 dark:border-surface-800">
                     {mediaType === 'IMAGE' ? (
                         <img
-                            src={`${API_BASE_URL}${mediaUrl}`}
+                            src={getMediaUrl(mediaUrl)}
                             alt="Post media"
                             className="w-full h-auto max-h-[500px] object-contain"
                         />
                     ) : mediaType === 'VIDEO' ? (
                         <video
-                            src={`${API_BASE_URL}${mediaUrl}`}
+                            src={getMediaUrl(mediaUrl)}
                             controls
                             className="w-full h-auto max-h-[500px]"
                         />
                     ) : null}
                 </div>
             )}
+
 
             {/* Interaction Stats */}
             <div className="px-4 py-3 flex items-center justify-between border-b border-gray-50 dark:border-surface-800">

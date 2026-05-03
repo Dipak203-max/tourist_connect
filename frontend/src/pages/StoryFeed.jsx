@@ -8,6 +8,8 @@ import CreateStoryModal from '../components/stories/CreateStoryModal';
 
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import { getMediaUrl } from '../config';
+
 
 const StoryFeed = () => {
     const { user } = useAuth();
@@ -19,13 +21,10 @@ const StoryFeed = () => {
     const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
     const navigate = useNavigate();
 
-    const API_BASE_URL = "http://localhost:8080";
-
     const getFullUrl = (url) => {
-        if (!url) return null;
-        if (url.startsWith('http')) return url;
-        return `${API_BASE_URL}${url}`;
+        return getMediaUrl(url);
     };
+
 
     useEffect(() => {
         loadStories();

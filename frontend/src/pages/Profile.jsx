@@ -25,6 +25,9 @@ import ProfileFeed from '../components/posts/ProfileFeed';
 import { getUserStories, deleteStory } from '../api/storyApi';
 import { Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import CreateStoryModal from '../components/stories/CreateStoryModal';
+import { config, getMediaUrl } from '../config';
+
+
 
 const Profile = () => {
     const { id } = useParams();
@@ -174,7 +177,9 @@ const Profile = () => {
 
         const promise = (async () => {
             const fileUrl = await uploadProfilePicture(file);
-            const fullUrl = `http://localhost:8080${fileUrl}`;
+            const fullUrl = getMediaUrl(fileUrl);
+
+
             
             setProfile(prev => ({ ...prev, profilePictureUrl: fullUrl }));
             
@@ -204,10 +209,10 @@ const Profile = () => {
     };
 
     const getProfileImageUrl = (url) => {
-        if (!url) return null;
-        if (url.startsWith('http')) return url;
-        return `http://localhost:8080${url}`;
+        return getMediaUrl(url);
     };
+
+
 
     if (loading) {
         return (
@@ -676,10 +681,12 @@ const Profile = () => {
                             <div className="absolute inset-0 flex items-center justify-center">
                                 {selectedStory.mediaUrls?.[0] ? (
                                     <img 
-                                        src={`http://localhost:8080${selectedStory.mediaUrls[0]}`} 
+                                        src={getMediaUrl(selectedStory.mediaUrls[0])} 
                                         alt="" 
                                         className="w-full h-full object-contain md:object-cover"
                                     />
+
+
                                 ) : (
                                     <div className="text-white text-center p-8">
                                         <h3 className="text-2xl font-bold">{selectedStory.title}</h3>
@@ -750,10 +757,12 @@ const FriendsSection = ({ userId, onFriendClick }) => {
                             className="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-2xl flex flex-col items-center gap-3 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all cursor-pointer group"
                         >
                             <img
-                                src={friend.profilePictureUrl ? (friend.profilePictureUrl.startsWith('http') ? friend.profilePictureUrl : `http://localhost:8080${friend.profilePictureUrl}`) : `https://ui-avatars.com/api/?name=${friend.fullName || friend.email}&background=random`}
+                                src={getMediaUrl(friend.profilePictureUrl) || `https://ui-avatars.com/api/?name=${friend.fullName || friend.email}&background=random`}
                                 className="w-16 h-16 rounded-full shadow-inner"
                                 alt="Friend"
                             />
+
+
                             <span className="font-bold text-xs text-center text-surface-900 dark:text-white group-hover:text-primary-600 transition-colors uppercase tracking-tight">{friend.fullName || friend.email}</span>
                         </div>
                     ))}
@@ -797,10 +806,11 @@ const MediaGrid = ({ type, userId }) => {
                     {media.map(post => (
                         <div key={post.id} className="aspect-square bg-surface-100 dark:bg-surface-800 rounded-2xl overflow-hidden hover:scale-105 transition-all">
                             {type === 'IMAGE' ? (
-                                <img src={`http://localhost:8080${post.mediaUrl}`} className="w-full h-full object-cover" alt="Media" />
+                                <img src={getMediaUrl(post.mediaUrl)} className="w-full h-full object-cover" alt="Media" />
                             ) : (
-                                <video src={`http://localhost:8080${post.mediaUrl}`} className="w-full h-full object-cover" />
+                                <video src={getMediaUrl(post.mediaUrl)} className="w-full h-full object-cover" />
                             )}
+
                         </div>
                     ))}
                 </div>

@@ -17,6 +17,8 @@ import { searchUsers } from '../api/userApi';
 import { Card, Button, Input, Badge, cn } from '../components/ui/BaseComponents';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { getMediaUrl } from '../config';
+
 
 const Friends = () => {
     const [friends, setFriends] = useState([]);
@@ -26,13 +28,10 @@ const Friends = () => {
     const [activeTab, setActiveTab] = useState('friends'); // 'friends', 'requests', 'discover'
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
-    const API_BASE_URL = "http://localhost:8080";
-
     const getFullUrl = (url) => {
-        if (!url) return null;
-        if (url.startsWith('http')) return url;
-        return `${API_BASE_URL}${url}`;
+        return getMediaUrl(url);
     };
+
 
     useEffect(() => {
         fetchData();

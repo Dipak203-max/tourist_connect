@@ -15,6 +15,8 @@ import {
 import { cn } from '../ui/BaseComponents';
 import { searchUsers } from '../../api/userApi';
 import { useNavigate } from 'react-router-dom';
+import { getMediaUrl } from '../../config';
+
 
 const TopBar = () => {
     const { user, logout } = useContext(AuthContext);
@@ -168,10 +170,11 @@ const TopBar = () => {
                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center text-primary-700 dark:text-primary-300 font-black shadow-sm border-2 border-white dark:border-surface-800">
                             {user?.profilePictureUrl ? (
                                 <img 
-                                    src={user.profilePictureUrl.startsWith('http') ? user.profilePictureUrl : `http://localhost:8080${user.profilePictureUrl}`} 
+                                    src={getMediaUrl(user.profilePictureUrl)} 
                                     alt="Avatar" 
                                     className="w-full h-full object-cover"
                                 />
+
                             ) : (
                                 <span>{(user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()}</span>
                             )}

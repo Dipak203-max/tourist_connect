@@ -8,6 +8,8 @@ import { getPrivateHistory, getConversations, getOrCreateConversation } from '..
 import SharedItineraryCard from '../components/SharedItineraryCard';
 import wsManager from '../utils/WebSocketManager';
 import { Button, Card, Input } from '../components/ui/BaseComponents';
+import { getMediaUrl } from '../config';
+
 
 const Chat = () => {
     const { user } = useAuth();
@@ -151,12 +153,9 @@ const Chat = () => {
     };
 
     const getAvatarUrl = (url) => {
-        if (!url || url === 'null' || url === 'undefined') return null;
-        if (url.startsWith('http')) return url;
-        if (url.startsWith('/uploads')) return `http://localhost:8080${url}`;
-        if (url.startsWith('uploads')) return `http://localhost:8080/${url}`;
-        return `http://localhost:8080/uploads/${url}`;
+        return getMediaUrl(url);
     };
+
 
     const handleImageError = (e) => {
         e.target.style.display = 'none';

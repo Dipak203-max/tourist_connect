@@ -3,6 +3,8 @@ import { Star, ThumbsUp, Calendar, ChevronDown, MessageSquare } from 'lucide-rea
 import { Button, Card } from '../../ui/BaseComponents';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { getMediaUrl } from '../../../config';
+
 
 const RatingBar = ({ stars, percentage }) => (
   <div className="flex items-center gap-4 w-full group">
@@ -18,10 +20,12 @@ const RatingBar = ({ stars, percentage }) => (
 );
 
 const getAvatarUrl = (url, name) => {
-  if (url && url.startsWith('http')) return url;
-  if (url && url.startsWith('/uploads')) return `http://localhost:8080${url}`;
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${name || 'Traveler'}`;
+  if (!url || url === 'null' || url === 'undefined') {
+    return `https://api.dicebear.com/7.x/avataaars/svg?seed=${name || 'Traveler'}`;
+  }
+  return getMediaUrl(url);
 };
+
 
 const ReviewItem = ({ review }) => {
   const navigate = useNavigate();

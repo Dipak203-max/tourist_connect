@@ -6,6 +6,8 @@ import FavoriteButton from '../../common/FavoriteButton';
 import { cn } from '../../../utils/cn';
 import { uploadGuideImage } from '../../../api/guideApi';
 import { toast } from 'react-hot-toast';
+import { getMediaUrl } from '../../../config';
+
 
 const GuideHero = ({ guide, onMessage, onBook, isOwner, onEdit, onProfilePictureUpdate }) => {
   const [uploading, setUploading] = useState(false);
@@ -23,7 +25,8 @@ const GuideHero = ({ guide, onMessage, onBook, isOwner, onEdit, onProfilePicture
     setUploading(true);
     try {
       const fileUrl = await uploadGuideImage(file);
-      const fullUrl = `http://localhost:8080${fileUrl}?t=${Date.now()}`;
+      const fullUrl = getMediaUrl(fileUrl);
+
       if (onProfilePictureUpdate) {
         await onProfilePictureUpdate(fullUrl);
       }

@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import adminApi from '../../api/adminApi';
 import toast from 'react-hot-toast';
+import { getMediaUrl } from '../../config';
+
 
 const AdminVerifyGuides = () => {
     const [guides, setGuides] = useState([]);
@@ -222,13 +224,13 @@ const AdminVerifyGuides = () => {
                                     {selectedDocs.license ? (
                                         selectedDocs.license.toLowerCase().endsWith('.pdf') ? (
                                             <iframe 
-                                                src={`http://localhost:8080/${selectedDocs.license.replace(/\\/g, '/')}`} 
+                                                src={getMediaUrl(selectedDocs.license)} 
                                                 className="w-full h-full border-none"
                                                 title="License PDF"
                                             />
                                         ) : (
                                             <img 
-                                                src={`http://localhost:8080/${selectedDocs.license.replace(/\\/g, '/')}`} 
+                                                src={getMediaUrl(selectedDocs.license)} 
                                                 alt="License" 
                                                 className="w-full h-full object-contain"
                                                 onError={(e) => {
@@ -237,6 +239,7 @@ const AdminVerifyGuides = () => {
                                                 }}
                                             />
                                         )
+
                                     ) : (
                                         <div className="text-center p-8">
                                             <ShieldAlert className="w-10 h-10 text-rose-300 mx-auto mb-2" />
@@ -252,13 +255,13 @@ const AdminVerifyGuides = () => {
                                     {selectedDocs.identity ? (
                                         selectedDocs.identity.toLowerCase().endsWith('.pdf') ? (
                                             <iframe 
-                                                src={`http://localhost:8080/${selectedDocs.identity.replace(/\\/g, '/')}`} 
+                                                src={getMediaUrl(selectedDocs.identity)} 
                                                 className="w-full h-full border-none"
                                                 title="Identity PDF"
                                             />
                                         ) : (
                                             <img 
-                                                src={`http://localhost:8080/${selectedDocs.identity.replace(/\\/g, '/')}`} 
+                                                src={getMediaUrl(selectedDocs.identity)} 
                                                 alt="Identity" 
                                                 className="w-full h-full object-contain"
                                                 onError={(e) => {
@@ -267,6 +270,7 @@ const AdminVerifyGuides = () => {
                                                 }}
                                             />
                                         )
+
                                     ) : (
                                         <div className="text-center p-8">
                                             <ShieldAlert className="w-10 h-10 text-rose-300 mx-auto mb-2" />

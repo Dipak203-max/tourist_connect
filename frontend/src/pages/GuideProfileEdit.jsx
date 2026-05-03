@@ -8,6 +8,8 @@ import { Save, Camera, Plus, X, Globe, DollarSign, Award, Clock, Phone, Mail, In
 import { toast } from 'react-hot-toast';
 import PageLoader from '../components/common/PageLoader';
 import { getToursByGuide, createTourPackage, deleteTourPackage } from '../api/tourApi';
+import { getMediaUrl } from '../config';
+
 
 const GuideProfileEdit = () => {
     const { user } = useContext(AuthContext);
@@ -163,7 +165,8 @@ const GuideProfileEdit = () => {
         setUploading(true);
         try {
             const fileUrl = await uploadGuideImage(file);
-            const fullUrl = `http://localhost:8080${fileUrl}`;
+            const fullUrl = getMediaUrl(fileUrl);
+
 
             if (type === 'cover') {
                 setFormData(prev => ({ ...prev, coverImageUrl: fullUrl }));
