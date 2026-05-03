@@ -9,6 +9,7 @@ public interface ItineraryRepository extends JpaRepository<Itinerary, Long> {
     List<Itinerary> findByUser(User user);
 
     List<Itinerary> findByUserOrderByStartDateDesc(User user);
+    List<Itinerary> findByUserOrderByIdDesc(User user);
 
     java.util.Optional<Itinerary> findByShareToken(String shareToken);
 }

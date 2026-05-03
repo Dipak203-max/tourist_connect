@@ -17,10 +17,18 @@ public class StoryController {
     private StoryService storyService;
 
     @PostMapping
-    public ResponseEntity<TravelStoryDto> createStory(Authentication authentication,
-            @RequestBody TravelStoryDto storyDto) {
-        String email = authentication.getName();
-        return ResponseEntity.ok(storyService.createStory(email, storyDto));
+    public ResponseEntity<?> createStory(Authentication authentication,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String content,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) com.touristconnect.entity.Visibility visibility,
+            @RequestParam(required = false) org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String email = authentication.getName();
+            return ResponseEntity.ok(storyService.createStory(email, title, content, location, visibility, file));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Story creation failed: " + e.getMessage());
+        }
     }
 
     @GetMapping("/my-stories")
@@ -32,5 +40,28 @@ public class StoryController {
     @GetMapping("/feed")
     public ResponseEntity<List<TravelStoryDto>> getPublicFeed() {
         return ResponseEntity.ok(storyService.getPublicFeed());
+    }
+
+    @GetMapping("/feed-friends")
+    public ResponseEntity<List<TravelStoryDto>> getFriendsFeed(Authentication authentication) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(storyService.getFeedForUser(email));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<TravelStoryDto>> getUserStories(@PathVariable Long userId, Authentication authentication) {
+        String currentUserEmail = authentication != null ? authentication.getName() : null;
+        return ResponseEntity.ok(storyService.getUserStories(userId, currentUserEmail));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteStory(@PathVariable Long id, Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            storyService.deleteStory(email, id);
+            return ResponseEntity.ok("Story deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Failed to delete story: " + e.getMessage());
+        }
     }
 }

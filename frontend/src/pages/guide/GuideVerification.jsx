@@ -1,14 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { uploadDocuments } from '../../api/guideApi';
+import { useNavigate } from 'react-router-dom';
+import { uploadDocuments, getMyGuideProfile } from '../../api/guideApi';
 import { Card, Button, cn } from '../../components/ui/BaseComponents';
 import { ShieldCheck, FileUp, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 const GuideVerification = () => {
+    const navigate = useNavigate();
     const [license, setLicense] = useState(null);
     const [identity, setIdentity] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [status, setStatus] = useState(null); // 'VERIFIED', 'PENDING', 'REJECTED', or null
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStatus = async () => {
+            try {
+                const profile = await getMyGuideProfile();
+                setStatus(profile.verificationStatus);
+            } catch (error) {
+                console.error("Failed to fetch verification status", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchStatus();
+    }, []);
 
     const handleUpload = async (e) => {
         e.preventDefault();
@@ -46,7 +64,6 @@ const GuideVerification = () => {
                 <input
                     type="file"
                     onChange={onChange}
-                    required
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
                 <div className={cn(
@@ -91,43 +108,89 @@ const GuideVerification = () => {
                 </p>
             </div>
 
-            <Card className="p-10 border-none shadow-premium relative overflow-hidden group">
+            {loading ? (
+                <div className="flex flex-col items-center justify-center p-20 space-y-4">
+                    <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-[10px] font-black text-surface-400 uppercase tracking-widest animate-pulse">Checking status...</p>
+                </div>
+            ) : (
+                <Card className="p-10 border-none shadow-premium relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                     <FileUp className="w-32 h-32 text-primary-500" />
                 </div>
 
-                <form onSubmit={handleUpload} className="space-y-8 relative z-10">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <FileInput 
-                            label="Guide License" 
-                            icon={ShieldCheck} 
-                            fileName={license?.name}
-                            onChange={(e) => setLicense(e.target.files[0])}
-                        />
-                        <FileInput 
-                            label="Government ID" 
-                            icon={FileUp} 
-                            fileName={identity?.name}
-                            onChange={(e) => setIdentity(e.target.files[0])}
-                        />
+                {status === 'VERIFIED' ? (
+                    <div className="text-center py-10 space-y-6 relative z-10">
+                        <div className="w-24 h-24 bg-emerald-500 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl shadow-emerald-100 animate-bounce">
+                            <ShieldCheck className="w-12 h-12 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black text-surface-900 dark:text-white tracking-tight mb-2">You are Verified!</h2>
+                            <p className="text-muted font-medium">Your guide credentials have been approved. You now have full access to premium features.</p>
+                        </div>
+                        <Button 
+                            onClick={() => navigate('/guide')}
+                            className="px-10 h-14 rounded-2xl text-xs uppercase tracking-widest font-black"
+                        >
+                            Go to Dashboard
+                        </Button>
                     </div>
-
-                    <div className="bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-800/50 p-6 rounded-[1.5rem] flex gap-4">
-                        <Info className="w-5 h-5 text-primary-600 dark:text-primary-400 shrink-0" />
-                        <p className="text-[11px] text-primary-900 dark:text-primary-300 font-medium leading-relaxed">
-                            Your documents are stored securely and encrypted. Our compliance team will review your application within 24-48 hours.
-                        </p>
+                ) : status === 'PENDING' ? (
+                    <div className="text-center py-10 space-y-6 relative z-10">
+                        <div className="w-24 h-24 bg-amber-500 rounded-[2rem] flex items-center justify-center mx-auto shadow-xl shadow-amber-100">
+                            <AlertCircle className="w-12 h-12 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black text-surface-900 dark:text-white tracking-tight mb-2">Verification Pending</h2>
+                            <p className="text-muted font-medium">Your documents are currently under review. Please check back within 24-48 hours.</p>
+                        </div>
                     </div>
+                ) : (
+                    <form onSubmit={handleUpload} className="space-y-8 relative z-10">
+                        {status === 'REJECTED' && (
+                            <div className="bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800/50 p-6 rounded-[1.5rem] flex gap-4 mb-8">
+                                <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
+                                <div>
+                                    <p className="text-xs font-black text-rose-600 uppercase tracking-widest mb-1">Application Rejected</p>
+                                    <p className="text-[11px] text-rose-900 dark:text-rose-300 font-medium leading-relaxed">
+                                        Please re-upload your documents. Ensure they are clear and valid.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <FileInput 
+                                label="Guide License" 
+                                icon={ShieldCheck} 
+                                fileName={license?.name}
+                                onChange={(e) => setLicense(e.target.files[0])}
+                            />
+                            <FileInput 
+                                label="Government ID" 
+                                icon={FileUp} 
+                                fileName={identity?.name}
+                                onChange={(e) => setIdentity(e.target.files[0])}
+                            />
+                        </div>
 
-                    <Button 
-                        type="submit" 
-                        isLoading={isUploading}
-                        className="w-full h-14 rounded-2xl text-xs uppercase tracking-widest font-black"
-                    >
-                        {isUploading ? "Processing..." : "Submit Verification Request"}
-                    </Button>
-                </form>
+                        <div className="bg-primary-50 dark:bg-primary-900/10 border border-primary-100 dark:border-primary-800/50 p-6 rounded-[1.5rem] flex gap-4">
+                            <Info className="w-5 h-5 text-primary-600 dark:text-primary-400 shrink-0" />
+                            <p className="text-[11px] text-primary-900 dark:text-primary-300 font-medium leading-relaxed">
+                                Your documents are stored securely and encrypted. Our compliance team will review your application within 24-48 hours.
+                            </p>
+                        </div>
+
+                        <Button 
+                            type="submit" 
+                            isLoading={isUploading}
+                            className="w-full h-14 rounded-2xl text-xs uppercase tracking-widest font-black"
+                        >
+                            {isUploading ? "Processing..." : "Submit Verification Request"}
+                        </Button>
+                    </form>
+                )}
             </Card>
+            )}
 
             {/* Support Section */}
             <div className="mt-8 text-center">

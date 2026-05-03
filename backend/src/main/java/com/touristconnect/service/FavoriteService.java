@@ -83,8 +83,6 @@ public class FavoriteService {
                 exists = itineraryRepository.existsById(itemId);
                 break;
             case EXPERIENCE:
-                // Placeholder: Assuming Experience module is coming soon
-                // For now, let's allow it if we don't have a repo yet, or throw generic error
                 exists = true;
                 break;
         }
@@ -127,7 +125,7 @@ public class FavoriteService {
                 favorite.getItemId(),
                 favorite.getItemType(),
                 favorite.getCreatedAt(),
-                null // Additional details can be fetched and populated if needed
+                null 
         );
     }
 }

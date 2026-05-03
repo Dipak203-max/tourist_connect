@@ -7,6 +7,7 @@ import com.touristconnect.entity.User;
 import com.touristconnect.repository.ChatGroupRepository;
 import com.touristconnect.repository.FriendRequestRepository;
 import com.touristconnect.repository.UserRepository;
+import com.touristconnect.entity.NotificationType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,12 +26,20 @@ public class ChatGroupService {
     @Autowired
     private FriendRequestRepository friendRequestRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     @Transactional
     public com.touristconnect.dto.GroupResponseDto createGroup(@NonNull String name, @NonNull String creatorEmail) {
         User user = userRepository.findByEmail(creatorEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         ChatGroup group = new ChatGroup(name, user);
         ChatGroup savedGroup = chatGroupRepository.save(group);
+        
+        // Notify creator
+        notificationService.createNotification(user, 
+            "You created group: " + name, NotificationType.GROUP_UPDATE, null, null, savedGroup.getId());
+            
         return toGroupResponse(savedGroup);
     }
 
@@ -55,6 +64,14 @@ public class ChatGroupService {
 
         group.addMember(newMember);
         chatGroupRepository.save(group);
+
+        // Notify all members
+        group.getMembers().forEach(member -> {
+            String nameToUse = newMember.getFullName() != null ? newMember.getFullName() : (newMember.getUsername() != null ? newMember.getUsername() : newMember.getEmail());
+            notificationService.createNotification(member, 
+                (member.getId().equals(newMember.getId()) ? "You were added to " : nameToUse + " joined ") + group.getName(), 
+                NotificationType.GROUP_UPDATE, group.getId(), null, group.getId());
+        });
     }
 
     @Transactional
@@ -74,6 +91,47 @@ public class ChatGroupService {
 
         group.removeMember(memberToRemove);
         chatGroupRepository.save(group);
+
+        // Mark all group notifications as read for the removed member
+        notificationService.markGroupNotificationsAsRead(groupId, memberToRemove.getEmail());
+
+        // Notify members (including the one removed)
+        notificationService.createNotification(memberToRemove, 
+            "You were removed from " + group.getName(), 
+            NotificationType.GROUP_UPDATE, group.getId(), null, group.getId());
+
+        group.getMembers().forEach(member -> {
+            String nameToUse = memberToRemove.getFullName() != null ? memberToRemove.getFullName() : (memberToRemove.getUsername() != null ? memberToRemove.getUsername() : memberToRemove.getEmail());
+            notificationService.createNotification(member, 
+                nameToUse + " left " + group.getName(), 
+                NotificationType.GROUP_UPDATE, group.getId(), null, group.getId());
+        });
+    }
+
+    @Transactional
+    public void deleteGroup(@NonNull Long groupId, @NonNull String requesterEmail) {
+        User requester = userRepository.findByEmail(requesterEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        ChatGroup group = chatGroupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        if (!group.getCreatedBy().getId().equals(requester.getId())) {
+            throw new RuntimeException("Only the creator can delete the group");
+        }
+
+        java.util.Set<User> membersToNotify = new java.util.HashSet<>(group.getMembers());
+        String groupName = group.getName();
+        Long currentGroupId = group.getId();
+
+        chatGroupRepository.delete(group);
+
+        // Notify all former members
+        membersToNotify.forEach(member -> {
+            notificationService.createNotification(member, 
+                "Group " + groupName + " has been dissolved", 
+                NotificationType.GROUP_UPDATE, currentGroupId, null, currentGroupId);
+        });
     }
 
     @Transactional(readOnly = true)

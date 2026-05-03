@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import WebSocketManager from '../utils/WebSocketManager';
 
-/**
- * useWebSocketStatus Hook
- * Returns the current connection status of the global WebSocket instance
- */
+
 export const useWebSocketStatus = () => {
     const [status, setStatus] = useState(WebSocketManager.status);
 
@@ -17,10 +14,7 @@ export const useWebSocketStatus = () => {
     return status;
 };
 
-/**
- * useWebSocketSubscription Hook
- * Handles safe subscription/unsubscription inside components
- */
+
 export const useWebSocketSubscription = (topic, callback) => {
     useEffect(() => {
         if (!topic) return;

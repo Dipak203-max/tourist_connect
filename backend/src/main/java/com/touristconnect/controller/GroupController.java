@@ -45,6 +45,16 @@ public class GroupController {
         }
     }
 
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<String> deleteGroup(Authentication authentication, @PathVariable @NonNull Long groupId) {
+        try {
+            chatGroupService.deleteGroup(groupId, Objects.requireNonNull(authentication.getName()));
+            return ResponseEntity.ok("Group deleted");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
+    }
+
     @GetMapping("/my-groups")
     public ResponseEntity<List<GroupResponseDto>> getMyGroups(Authentication authentication) {
         return ResponseEntity.ok(chatGroupService.getMyGroups(Objects.requireNonNull(authentication.getName())));

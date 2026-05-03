@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import { getUnreadCount, markAsRead } from '../api/notificationApi';
+import { getUnreadCount, getGroupUnreadCount, getGroupUnreadCountsMap, markAsRead, markGroupAsRead } from '../api/notificationApi';
 import { getFriends } from '../api/friendApi';
 import wsManager from '../utils/WebSocketManager';
 import { toast } from 'react-hot-toast';
@@ -15,6 +15,8 @@ export const ChatProvider = ({ children }) => {
     const [messages, setMessages] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [groupUnreadCount, setGroupUnreadCount] = useState(0);
+    const [groupUnreadMap, setGroupUnreadMap] = useState({});
     const [chatUnreadMap, setChatUnreadMap] = useState({});
     const [totalChatUnread, setTotalChatUnread] = useState(0);
     const [isConnected, setIsConnected] = useState(false);
@@ -62,6 +64,20 @@ export const ChatProvider = ({ children }) => {
         if (user) {
             getUnreadCount().then(res => setUnreadCount(typeof res === 'number' ? res : 0))
                 .catch(err => console.error("Failed to load notification unread count", err));
+
+            getGroupUnreadCount().then(res => setGroupUnreadCount(typeof res === 'number' ? res : 0))
+                .catch(err => console.error("Failed to load group unread count", err));
+
+            getGroupUnreadCountsMap().then(res => {
+                const normalized = {};
+                if (res) {
+                    Object.entries(res).forEach(([key, val]) => {
+                        normalized[String(key)] = val;
+                    });
+                }
+                setGroupUnreadMap(normalized);
+            })
+            .catch(err => console.error("Failed to load group unread map", err));
 
             import('../api/chatApi').then(({ getUnreadCounts, getConversations }) => {
                 getUnreadCounts()
@@ -167,7 +183,7 @@ export const ChatProvider = ({ children }) => {
             }) : () => { };
 
             const unsubscribeNotifications = wsManager.subscribe(
-    `/queue/notifications/${user.id}`,
+    `/topic/notifications/${user.id}`,
     (event) => {
         const notification = event.payload;
 
@@ -175,24 +191,41 @@ export const ChatProvider = ({ children }) => {
 
         // ✅ 1. Add to notification list
         setNotifications(prev => {
+            if (notification.type === 'MESSAGE') {
+                return prev;
+            }
             const exists = prev.some(n => n.id === notification.id);
             if (exists) return prev;
             return [notification, ...prev];
         });
 
-        // ✅ 2. If it's group message → trigger UI update
-        if (notification.groupId) {
-            // Force refresh conversations (group list)
+        // ✅ 2. Increment correct counter
+        if (notification.type === 'MESSAGE' && notification.groupId) {
+            setGroupUnreadCount(prev => prev + 1);
+            setGroupUnreadMap(prev => {
+                const gid = String(notification.groupId);
+                return {
+                    ...prev,
+                    [gid]: (prev[gid] || 0) + 1
+                };
+            });
+            
+            // Refresh conversations (group list)
             setConversations(prev => [...prev]);
-
-            // Optional: you can also trigger a fetch if needed
+            
+            toast.success(
+                notification.message || "New group message",
+                { icon: "👥" }
+            );
+        } else if (notification.type !== 'MESSAGE') {
+            // All other notifications go to the system list (Bell icon)
+            setUnreadCount(prev => prev + 1);
+            
+            toast.success(
+                notification.message || "New notification",
+                { icon: "🔔" }
+            );
         }
-
-        // ✅ 3. Toast
-        toast.success(
-            notification.content || "New group message",
-            { icon: "💬" }
-        );
     }
 );
 
@@ -211,10 +244,14 @@ export const ChatProvider = ({ children }) => {
     const markNotificationAsRead = async (id) => {
         try {
             await markAsRead(id);
-            setUnreadCount(prev => Math.max(0, prev - 1));
+            
+            // Re-fetch counts to ensure absolute accuracy across sidebars
+            getUnreadCount().then(res => setUnreadCount(typeof res === 'number' ? res : 0));
+            getGroupUnreadCount().then(res => setGroupUnreadCount(typeof res === 'number' ? res : 0));
+            
             setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
         } catch (err) {
-            console.error(err);
+            console.error("Failed to mark notification as read", err);
         }
     };
 
@@ -235,6 +272,31 @@ export const ChatProvider = ({ children }) => {
         }
     };
 
+    const markGroupAsReadGlobal = async (groupId) => {
+        try {
+            await markGroupAsRead(groupId);
+            
+            // Re-fetch to be 100% sure of synchronization
+            const [total, map] = await Promise.all([
+                getGroupUnreadCount(),
+                getGroupUnreadCountsMap()
+            ]);
+            
+            setGroupUnreadCount(typeof total === 'number' ? total : 0);
+            
+            const normalized = {};
+            if (map) {
+                Object.entries(map).forEach(([key, val]) => {
+                    normalized[String(key)] = val;
+                });
+            }
+            setGroupUnreadMap(normalized);
+
+        } catch (err) {
+            console.error("Failed to clear group notifications", err);
+        }
+    };
+
     return (
         <ChatContext.Provider value={{
             messages,
@@ -244,6 +306,8 @@ export const ChatProvider = ({ children }) => {
             notifications,
             setNotifications,
             unreadCount,
+            groupUnreadCount,
+            groupUnreadMap,
             chatUnreadMap,
             totalChatUnread,
             setActiveChatId,
@@ -251,6 +315,7 @@ export const ChatProvider = ({ children }) => {
             isConnected,
             markNotificationAsRead,
             markChatAsReadGlobal,
+            markGroupAsReadGlobal,
             // Helper to add a message (optimistic UI)
             addMessage: (msg) => {
                 setMessages(prev => {

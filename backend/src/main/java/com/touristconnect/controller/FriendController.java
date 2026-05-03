@@ -57,4 +57,10 @@ public class FriendController {
     public ResponseEntity<List<com.touristconnect.dto.UserDto>> getUserFriends(@PathVariable Long userId) {
         return ResponseEntity.ok(friendService.getFriendsByUserId(userId));
     }
+
+    @DeleteMapping("/unfriend/{friendId}")
+    public ResponseEntity<String> unfriend(Authentication authentication, @PathVariable Long friendId) {
+        String email = authentication.getName();
+        return ResponseEntity.ok(friendService.unfriend(email, friendId));
+    }
 }

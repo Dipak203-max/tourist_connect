@@ -26,7 +26,7 @@ public class AdminInitializer {
             admin.setEmail(adminEmail);
             admin.setPassword(passwordEncoder.encode("Dipak123"));
             admin.setRole(Role.ADMIN);
-            admin.setEnabled(true); // Enabled by default
+            admin.setEnabled(true); 
             admin.setOtp(null);
             admin.setOtpExpiry(null);
 

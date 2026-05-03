@@ -43,6 +43,8 @@ const PaymentSuccess = lazy(() => import('./pages/payment/PaymentSuccess'));
 const AdminPayments = lazy(() => import('./pages/admin/AdminPayments'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const About = lazy(() => import('./pages/About'));
+const Friends = lazy(() => import('./pages/Friends'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 import { ChatProvider } from './context/ChatContext';
 import { ConnectivityProvider } from './context/ConnectivityContext';
@@ -56,7 +58,14 @@ import OfflineBanner from './components/common/OfflineBanner';
 import { Toaster } from 'react-hot-toast';
 import PageLoader from './components/common/PageLoader';
 
+import { useAuth } from './context/AuthContext';
 const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Hybrid Layout for pages that should use DashboardLayout if logged in, else PublicLayout
+const HybridLayout = () => {
+  const { user } = useAuth();
+  return user ? <DashboardLayout /> : <PublicLayout />;
+};
 
 function App() {
   return (
@@ -87,10 +96,12 @@ function App() {
 
                         {/* Public Routes */}
                         <Route path="/about" element={<About />} />
-                       <Route path="/destinations" element={<PublicLayout />}>
-  <Route index element={<Destinations />} />
-  <Route path=":id" element={<DestinationDetails />} />
-</Route>
+                        {/* Destinations Routes - Dynamic Layout based on Auth */}
+                        <Route element={<HybridLayout />}>
+                          <Route path="/destinations" element={<Destinations />} />
+                          <Route path="/destinations/:id" element={<DestinationDetails />} />
+                        </Route>
+
                         <Route path="/public/itinerary/:token" element={<PublicItineraryView />} />
 
                         {/* ADMIN Routes */}
@@ -143,12 +154,20 @@ function App() {
                             <Route path="/notifications" element={<Notifications />} />
                             <Route path="/groups" element={<TravelGroups />} />
                             <Route path="/find-guides" element={<GuideDiscovery />} />
+                            <Route path="/friends" element={<Friends />} />
                             <Route path="/itineraries" element={<MyItineraries />} />
                             <Route path="/itineraries/:id" element={<ItineraryPlanner />} />
                             <Route path="/my-favorites" element={<MyFavorites />} />
                             <Route path="/payment/success" element={<PaymentSuccess />} />
+                            <Route path="/settings" element={<Settings />} />
                           </Route>
                         </Route>
+
+                        <Route path="/explore" element={<Navigate to="/find-guides" replace />} />
+                        <Route path="/become-guide" element={<Navigate to="/register" replace />} />
+                        <Route path="/contact" element={<Navigate to="/about" replace />} />
+                        <Route path="/privacy" element={<Navigate to="/about" replace />} />
+                        <Route path="/terms" element={<Navigate to="/about" replace />} />
 
                         <Route path="*" element={<NotFound />} />
                       </Routes>

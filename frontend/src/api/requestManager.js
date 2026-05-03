@@ -4,7 +4,7 @@
  */
 class RequestManager {
     constructor() {
-        this.pendingRequests = new Map(); // key -> promise
+        this.pendingRequests = new Map(); 
     }
 
     getCacheKey(config) {

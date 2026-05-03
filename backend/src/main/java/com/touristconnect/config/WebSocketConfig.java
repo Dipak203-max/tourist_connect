@@ -39,7 +39,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
-        // Use specific origin to avoid issues with credentials + wildcards
        registry.addEndpoint("/ws-chat")
     .setAllowedOriginPatterns("*") 
     .withSockJS();
@@ -84,7 +83,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         }
                     }
                 } catch (Exception e) {
-                    // Log error but don't crash the broker, though authentication will fail
                     System.err.println("WebSocket Authentication Failed: " + e.getMessage());
                 }
                 return message;

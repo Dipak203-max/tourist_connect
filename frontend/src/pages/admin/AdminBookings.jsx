@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import adminApi from '../../api/adminApi';
 import { format } from 'date-fns';
+import BookingDetailsModal from '../../components/admin/BookingDetailsModal';
 
 const AdminBookings = () => {
     const [bookings, setBookings] = useState([]);
@@ -18,6 +19,7 @@ const AdminBookings = () => {
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [status, setStatus] = useState('');
+    const [selectedBooking, setSelectedBooking] = useState(null);
 
     useEffect(() => {
         fetchBookings();
@@ -68,7 +70,10 @@ const AdminBookings = () => {
                         <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted group-hover:text-indigo-600 transition-colors" />
                         <select 
                             value={status}
-                            onChange={(e) => setStatus(e.target.value)}
+                            onChange={(e) => {
+                                setStatus(e.target.value);
+                                setPage(0);
+                            }}
                             className="pl-12 pr-10 py-3 bg-surface-50 dark:bg-surface-900 border border-surface-200 dark:border-surface-700 rounded-2xl text-xs font-black uppercase tracking-widest text-gray-600 shadow-sm hover:shadow-md transition-all appearance-none cursor-pointer"
                         >
                             <option value="">All Statuses</option>
@@ -135,7 +140,10 @@ const AdminBookings = () => {
                                             </span>
                                         </td>
                                         <td className="px-8 py-6">
-                                            <button className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors underline underline-offset-4">
+                                            <button 
+                                                onClick={() => setSelectedBooking(booking)}
+                                                className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 transition-colors underline underline-offset-4"
+                                            >
                                                 View Details
                                             </button>
                                         </td>
@@ -168,6 +176,13 @@ const AdminBookings = () => {
                         <ChevronRight className="w-5 h-5 text-muted group-hover:text-indigo-600 transition-colors" />
                     </button>
                 </div>
+            )}
+
+            {selectedBooking && (
+                <BookingDetailsModal 
+                    booking={selectedBooking} 
+                    onClose={() => setSelectedBooking(null)} 
+                />
             )}
         </div>
     );

@@ -22,4 +22,9 @@ public class PostDto {
     private Long userId;
     private String username;
     private String fullName;
+    private String profilePictureUrl;
+    private int likeCount;
+    private int commentCount;
+    private boolean isLikedByCurrentUser;
+    private java.util.List<CommentDto> comments;
 }

@@ -14,10 +14,13 @@ public class AdminGuideDto {
     private VerificationStatus verificationStatus;
     private LocalDateTime createdAt;
 
-    // License docs URLs could be added here if needed
+    private String licenseDocumentUrl;
+    private String identityDocumentUrl;
+    private String rejectionReason;
 
     public AdminGuideDto(Long id, String name, String email, String specialization, int experienceYears,
-            List<String> languages, VerificationStatus verificationStatus, LocalDateTime createdAt) {
+            List<String> languages, VerificationStatus verificationStatus, LocalDateTime createdAt,
+            String licenseDocumentUrl, String identityDocumentUrl, String rejectionReason) {
         this.id = id;
         this.name = name;
         this.email = email;
@@ -26,6 +29,9 @@ public class AdminGuideDto {
         this.languages = languages;
         this.verificationStatus = verificationStatus;
         this.createdAt = createdAt;
+        this.licenseDocumentUrl = licenseDocumentUrl;
+        this.identityDocumentUrl = identityDocumentUrl;
+        this.rejectionReason = rejectionReason;
     }
 
     public Long getId() {
@@ -90,5 +96,29 @@ public class AdminGuideDto {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getLicenseDocumentUrl() {
+        return licenseDocumentUrl;
+    }
+
+    public void setLicenseDocumentUrl(String licenseDocumentUrl) {
+        this.licenseDocumentUrl = licenseDocumentUrl;
+    }
+
+    public String getIdentityDocumentUrl() {
+        return identityDocumentUrl;
+    }
+
+    public void setIdentityDocumentUrl(String identityDocumentUrl) {
+        this.identityDocumentUrl = identityDocumentUrl;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
     }
 }

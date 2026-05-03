@@ -44,9 +44,10 @@ public class GuideReportController {
             @RequestParam String type,
             @RequestParam int year,
             @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer day,
             Authentication auth) {
 
-        byte[] pdf = reportService.generateGuideReportPdf(auth.getName(), type, year, month);
+        byte[] pdf = reportService.generateGuideReportPdf(auth.getName(), type, year, month, day);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=guide-report.pdf")

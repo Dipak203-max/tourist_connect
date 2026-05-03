@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Star, ThumbsUp, Calendar, ChevronDown, MessageSquare } from 'lucide-react';
 import { Button, Card } from '../../ui/BaseComponents';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 const RatingBar = ({ stars, percentage }) => (
   <div className="flex items-center gap-4 w-full group">
@@ -16,43 +17,61 @@ const RatingBar = ({ stars, percentage }) => (
   </div>
 );
 
-const ReviewItem = ({ review }) => (
-  <div className="py-8 border-b border-surface-100 dark:border-surface-800 group transition-all duration-300 hover:px-2 rounded-2xl hover:bg-surface-50 dark:hover:bg-surface-800/30">
-    <div className="flex items-start justify-between mb-4">
-      <div className="flex items-center gap-4">
-        <div className="p-1 bg-white dark:bg-surface-900 rounded-2xl shadow-md group-hover:shadow-lg transition-all">
-          <img
-            src={review?.userAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${review?.userName || 'Traveler'}`}
-            alt={review?.userName}
-            className="w-14 h-14 rounded-xl object-cover"
-          />
-        </div>
-        <div>
-          <h4 className="text-lg font-black text-surface-900 dark:text-surface-100">{review?.userName || "Adventure Traveler"}</h4>
-          <div className="flex items-center gap-3 text-sm text-surface-400 font-bold">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-4 h-4 text-primary-500" /> 
-              {review?.createdAt ? format(new Date(review.createdAt), 'MMMM yyyy') : "October 2023"}
-            </span>
-            <span className="hidden md:inline-flex items-center px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase border border-emerald-100">Verified Trip</span>
+const getAvatarUrl = (url, name) => {
+  if (url && url.startsWith('http')) return url;
+  if (url && url.startsWith('/uploads')) return `http://localhost:8080${url}`;
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${name || 'Traveler'}`;
+};
+
+const ReviewItem = ({ review }) => {
+  const navigate = useNavigate();
+  
+  return (
+    <div className="py-8 border-b border-surface-100 dark:border-surface-800 group transition-all duration-300 hover:px-2 rounded-2xl hover:bg-surface-50 dark:hover:bg-surface-800/30">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center gap-4">
+          <div 
+            onClick={() => review?.userId && navigate(`/profile/${review.userId}`)}
+            className="p-1 bg-white dark:bg-surface-900 rounded-2xl shadow-md group-hover:shadow-lg transition-all cursor-pointer hover:scale-105"
+          >
+            <img
+              src={getAvatarUrl(review?.userAvatar, review?.userName)}
+              alt={review?.userName}
+              className="w-14 h-14 rounded-xl object-cover"
+            />
+          </div>
+          <div>
+            <h4 
+              onClick={() => review?.userId && navigate(`/profile/${review.userId}`)}
+              className="text-lg font-black text-surface-900 dark:text-surface-100 cursor-pointer hover:text-primary-600 transition-colors"
+            >
+              {review?.userName || "Anonymous Traveler"}
+            </h4>
+            <div className="flex items-center gap-3 text-sm text-surface-400 font-bold">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4 text-primary-500" /> 
+                {review?.createdAt ? format(new Date(review.createdAt), 'MMMM yyyy') : "Recently"}
+              </span>
+              <span className="hidden md:inline-flex items-center px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black uppercase border border-emerald-100">Verified Trip</span>
+            </div>
           </div>
         </div>
+        <div className="flex items-center gap-1.5 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700/50">
+          <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+          <span className="text-lg font-black text-amber-700 dark:text-amber-400">{review?.rating || "0.0"}</span>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700/50">
-        <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-        <span className="text-lg font-black text-amber-700 dark:text-amber-400">{review?.rating || "5.0"}</span>
+      <p className="text-surface-600 dark:text-surface-400 text-lg leading-relaxed font-bold italic">
+        {review?.comment ? `"${review.comment}"` : '"No comment provided."'}
+      </p>
+      <div className="mt-4 flex items-center gap-4">
+        <button className="flex items-center gap-2 text-primary-600 dark:text-primary-400 font-black text-xs uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
+          <ThumbsUp className="w-4 h-4" /> Helpful (0)
+        </button>
       </div>
     </div>
-    <p className="text-surface-600 dark:text-surface-400 text-lg leading-relaxed font-bold italic">
-      {review?.comment ? `"${review.comment}"` : '"Incredible experience with this guide!"'}
-    </p>
-    <div className="mt-4 flex items-center gap-4">
-      <button className="flex items-center gap-2 text-primary-600 dark:text-primary-400 font-black text-xs uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
-        <ThumbsUp className="w-4 h-4" /> Helpful (0)
-      </button>
-    </div>
-  </div>
-);
+  );
+};
 
 const GuideReviewList = ({ reviews = [], stats }) => {
   const distribution = useMemo(() => {
@@ -63,6 +82,10 @@ const GuideReviewList = ({ reviews = [], stats }) => {
       counts[5 - star]++;
     });
     return counts.map(count => Math.round((count / reviews.length) * 100));
+  }, [reviews]);
+
+  const sortedReviews = useMemo(() => {
+    return [...reviews].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }, [reviews]);
 
   return (
@@ -105,8 +128,8 @@ const GuideReviewList = ({ reviews = [], stats }) => {
           </Button>
         </div>
         
-        {reviews.length > 0 ? (
-          reviews.map((review) => (
+        {sortedReviews.length > 0 ? (
+          sortedReviews.map((review) => (
             <ReviewItem key={review.id} review={review} />
           ))
         ) : (

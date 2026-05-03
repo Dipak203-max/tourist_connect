@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  'https://touristconnect-production.up.railway.app/api';
+  'http://localhost:8080/api';
 
 import requestManager from './requestManager';
 
@@ -28,7 +28,7 @@ axiosInstance.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
 
-// ❌ DO NOT attach token for auth endpoints
+// DO NOT attach token for auth endpoints
 if (
     token &&
     !config.url.includes('/auth/login') &&

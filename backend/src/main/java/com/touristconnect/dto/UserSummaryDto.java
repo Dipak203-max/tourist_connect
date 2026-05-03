@@ -4,7 +4,7 @@ public class UserSummaryDto {
     private Long id;
     private String email;
     private String role;
-    private String name; // Can be derived or actual field
+    private String name; 
     private String profilePictureUrl;
 
     public UserSummaryDto() {

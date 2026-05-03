@@ -187,7 +187,6 @@ public class BookingService {
             }
         }
 
-        BookingStatus oldStatus = booking.getStatus();
         booking.setStatus(status);
         Booking savedBooking = bookingRepository.save(booking);
 

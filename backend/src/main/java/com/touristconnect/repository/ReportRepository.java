@@ -15,44 +15,43 @@ public interface ReportRepository extends JpaRepository<Payment, Long> {
 
         @Query("SELECT new com.touristconnect.dto.ReportDTO$FinancialSummaryDTO(" +
                         "COUNT(p), SUM(p.amount), SUM(p.commissionAmount), SUM(p.guideAmount)) " +
-                        "FROM Payment p JOIN Booking b ON p.bookingId = b.id " +
-                        "WHERE p.status = :status AND b.date BETWEEN :start AND :end")
+                        "FROM Payment p " +
+                        "WHERE p.status = :status AND p.createdAt BETWEEN :start AND :end")
         ReportDTO.FinancialSummaryDTO getFinancialSummary(
                         @Param("status") PaymentStatus status,
-                        @Param("start") java.time.LocalDate start,
-                        @Param("end") java.time.LocalDate end);
+                        @Param("start") java.time.LocalDateTime start,
+                        @Param("end") java.time.LocalDateTime end);
 
         @Query("SELECT new com.touristconnect.dto.ReportDTO$InvoiceSummaryDTO(" +
                         "p.invoiceNumber, p.createdAt, u.fullName, p.amount, CAST(p.status AS string)) " +
                         "FROM Payment p JOIN User u ON p.userId = u.id " +
-                        "JOIN Booking b ON p.bookingId = b.id " +
-                        "WHERE p.status = :status AND b.date BETWEEN :start AND :end " +
-                        "ORDER BY b.date DESC, p.createdAt DESC")
+                        "WHERE p.status = :status AND p.createdAt BETWEEN :start AND :end " +
+                        "ORDER BY p.createdAt DESC")
         List<ReportDTO.InvoiceSummaryDTO> getInvoiceSummaries(
                         @Param("status") PaymentStatus status,
-                        @Param("start") java.time.LocalDate start,
-                        @Param("end") java.time.LocalDate end);
+                        @Param("start") java.time.LocalDateTime start,
+                        @Param("end") java.time.LocalDateTime end);
 
         @Query("SELECT new com.touristconnect.dto.GuideReportDTO$FinancialSummaryDTO(" +
                         "COUNT(p), SUM(p.amount), SUM(p.commissionAmount), SUM(p.guideAmount)) " +
                         "FROM Payment p JOIN Booking b ON p.bookingId = b.id " +
-                        "WHERE (p.status IN :statuses) AND b.guide.email = :email AND b.date BETWEEN :start AND :end")
+                        "WHERE (p.status IN :statuses) AND b.guide.email = :email AND p.createdAt BETWEEN :start AND :end")
         com.touristconnect.dto.GuideReportDTO.FinancialSummaryDTO getGuideFinancialSummary(
                         @Param("email") String email,
                         @Param("statuses") List<PaymentStatus> statuses,
-                        @Param("start") java.time.LocalDate start,
-                        @Param("end") java.time.LocalDate end);
+                        @Param("start") java.time.LocalDateTime start,
+                        @Param("end") java.time.LocalDateTime end);
 
         @Query("SELECT new com.touristconnect.dto.GuideReportDTO$BookingSummaryDTO(" +
                         "p.invoiceNumber, p.createdAt, u.fullName, p.amount, CAST(p.status AS string)) " +
                         "FROM Payment p JOIN User u ON p.userId = u.id " +
                         "JOIN Booking b ON p.bookingId = b.id " +
-                        "WHERE (p.status IN :statuses) AND b.guide.email = :email AND b.date BETWEEN :start AND :end "
+                        "WHERE (p.status IN :statuses) AND b.guide.email = :email AND p.createdAt BETWEEN :start AND :end "
                         +
-                        "ORDER BY b.date DESC, p.createdAt DESC")
+                        "ORDER BY p.createdAt DESC")
         List<com.touristconnect.dto.GuideReportDTO.BookingSummaryDTO> getGuideBookingSummaries(
                         @Param("email") String email,
                         @Param("statuses") List<PaymentStatus> statuses,
-                        @Param("start") java.time.LocalDate start,
-                        @Param("end") java.time.LocalDate end);
+                        @Param("start") java.time.LocalDateTime start,
+                        @Param("end") java.time.LocalDateTime end);
 }

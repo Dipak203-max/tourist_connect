@@ -8,26 +8,51 @@ import {
     Search,
     ChevronDown,
     Moon,
-    Sun
+    Sun,
+    User,
+    Loader2
 } from 'lucide-react';
 import { cn } from '../ui/BaseComponents';
+import { searchUsers } from '../../api/userApi';
+import { useNavigate } from 'react-router-dom';
 
 const TopBar = () => {
     const { user, logout } = useContext(AuthContext);
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showResults, setShowResults] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
 
-    // Debounced search logic could go here to trigger API calls
     useDebounce(
-        () => {
-            if (searchTerm) {
-                console.log('Searching for:', searchTerm);
+        async () => {
+            if (searchTerm.trim().length > 1) {
+                setIsSearching(true);
+                setShowResults(true);
+                try {
+                    const data = await searchUsers(searchTerm);
+                    setSearchResults(data);
+                } catch (error) {
+                    console.error("Search failed:", error);
+                } finally {
+                    setIsSearching(false);
+                }
+            } else {
+                setSearchResults([]);
+                setShowResults(false);
             }
         },
         500,
         [searchTerm]
     );
+
+    const handleSearchResultClick = (userId) => {
+        setSearchTerm('');
+        setShowResults(false);
+        navigate(`/profile/${userId}`);
+    };
 
     const toggleDarkMode = () => {
         setIsDarkMode(!isDarkMode);
@@ -44,9 +69,63 @@ const TopBar = () => {
                         type="text" 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search for bookings, users, or guides..."
+                        onFocus={() => searchTerm.trim().length > 1 && setShowResults(true)}
+                        placeholder="Search for users or guides..."
                         className="w-full bg-surface-50 dark:bg-surface-800/50 border border-transparent rounded-xl py-2.5 pl-11 pr-4 text-sm font-medium text-surface-900 dark:text-surface-100 placeholder:text-surface-400 focus:bg-surface-50 dark:focus:bg-surface-900 dark:focus:bg-surface-800 focus:border-primary-500/50 focus:ring-4 focus:ring-primary-500/5 outline-none transition-all"
                     />
+
+                    {/* Search Results Dropdown */}
+                    <AnimatePresence>
+                        {showResults && (
+                            <>
+                                <div className="fixed inset-0 z-0" onClick={() => setShowResults(false)} />
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 10 }}
+                                    className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-surface-900 rounded-2xl shadow-2xl border border-surface-200 dark:border-surface-800 overflow-hidden z-50"
+                                >
+                                    {isSearching ? (
+                                        <div className="p-8 flex flex-col items-center justify-center text-surface-400">
+                                            <Loader2 className="w-6 h-6 animate-spin mb-2 text-primary-500" />
+                                            <span className="text-xs font-bold uppercase tracking-widest">Searching...</span>
+                                        </div>
+                                    ) : searchResults.length > 0 ? (
+                                        <div className="p-2 max-h-[400px] overflow-y-auto">
+                                            {searchResults.map((res) => (
+                                                <button
+                                                    key={res.id}
+                                                    onClick={() => handleSearchResultClick(res.id)}
+                                                    className="w-full flex items-center gap-3 p-3 hover:bg-surface-50 dark:hover:bg-surface-800 rounded-xl transition-all text-left group"
+                                                >
+                                                    <div className="w-10 h-10 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-black text-sm group-hover:scale-110 transition-transform">
+                                                        {res.fullName?.[0] || res.username?.[0] || 'U'}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-sm font-bold text-surface-900 dark:text-surface-100 truncate">{res.fullName}</h4>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[10px] text-surface-400 truncate">@{res.username}</span>
+                                                            <span className="w-1 h-1 bg-surface-300 rounded-full" />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-primary-500">{res.role}</span>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronDown className="w-4 h-4 text-surface-300 -rotate-90 opacity-0 group-hover:opacity-100 transition-all" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-8 text-center">
+                                            <div className="w-12 h-12 bg-surface-50 dark:bg-surface-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                                                <User className="w-6 h-6 text-surface-300" />
+                                            </div>
+                                            <p className="text-sm font-bold text-surface-900 dark:text-surface-100">No users found</p>
+                                            <p className="text-xs text-surface-400 mt-1">Try a different name or username</p>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
 
@@ -86,8 +165,16 @@ const TopBar = () => {
                             </span>
                         </div>
                         
-                        <div className="w-9 h-9 bg-primary-100 dark:bg-primary-900/50 rounded-xl flex items-center justify-center text-primary-700 dark:text-primary-300 font-black shadow-sm">
-                            {(user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()}
+                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center text-primary-700 dark:text-primary-300 font-black shadow-sm border-2 border-white dark:border-surface-800">
+                            {user?.profilePictureUrl ? (
+                                <img 
+                                    src={user.profilePictureUrl.startsWith('http') ? user.profilePictureUrl : `http://localhost:8080${user.profilePictureUrl}`} 
+                                    alt="Avatar" 
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span>{(user?.fullName?.[0] || user?.email?.[0] || 'U').toUpperCase()}</span>
+                            )}
                         </div>
                         <ChevronDown className={cn("w-4 h-4 text-surface-400 transition-transform", isUserMenuOpen && "rotate-180")} />
                     </button>
@@ -103,13 +190,25 @@ const TopBar = () => {
                                     className="absolute right-0 mt-2 w-56 glass-card rounded-2xl border border-surface-200 dark:border-surface-800 shadow-2xl z-20 overflow-hidden"
                                 >
                                     <div className="p-2 space-y-1">
-                                        <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 rounded-lg transition-colors">
+                                        <button 
+                                            onClick={() => {
+                                                navigate('/profile');
+                                                setIsUserMenuOpen(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 rounded-lg transition-colors"
+                                        >
                                             <span className="w-8 h-8 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center">
                                                 <UserCircle className="w-4 h-4" />
                                             </span>
                                             My Profile
                                         </button>
-                                        <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 rounded-lg transition-colors">
+                                        <button 
+                                            onClick={() => {
+                                                navigate('/settings');
+                                                setIsUserMenuOpen(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-surface-600 dark:text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 hover:text-surface-900 dark:hover:text-surface-100 rounded-lg transition-colors"
+                                        >
                                             <span className="w-8 h-8 rounded-lg bg-surface-100 dark:bg-surface-800 flex items-center justify-center">
                                                 <Settings className="w-4 h-4" />
                                             </span>
@@ -117,7 +216,10 @@ const TopBar = () => {
                                         </button>
                                         <hr className="my-2 border-surface-100 dark:border-surface-800" />
                                         <button 
-                                            onClick={logout}
+                                            onClick={() => {
+                                                logout();
+                                                setIsUserMenuOpen(false);
+                                            }}
                                             className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
                                         >
                                             <span className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 flex items-center justify-center">

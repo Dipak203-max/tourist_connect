@@ -73,8 +73,8 @@ public class PaymentService {
     }
 
     public InvoiceData getInvoiceData(Long id) {
-        // 1. Try to find by Payment ID first (with eager loading)
-        // 2. If not found, try by Booking ID (to handle frontend mismatch gracefully)
+        // 1. Try to find by Payment ID first 
+        // 2. If not found, try by Booking ID 
         Payment payment = paymentRepository.findByIdWithBookingAndUsers(id)
                 .or(() -> paymentRepository.findByBookingId(id)
                         .flatMap(p -> paymentRepository.findByIdWithBookingAndUsers(p.getId())))
@@ -157,9 +157,9 @@ public class PaymentService {
         if (payment.getKhaltiPidx() != null && payment.getStatus() == PaymentStatus.PENDING) {
             Map<String, Object> existingResponse = new HashMap<>();
             existingResponse.put("pidx", payment.getKhaltiPidx());
-            existingResponse.put("payment_url", "https://test-pay.khalti.com/?pidx=" + payment.getKhaltiPidx()); // Simplified
-                                                                                                                 // for
-                                                                                                                 // sandbox
+            existingResponse.put("payment_url", "https://test-pay.khalti.com/?pidx=" + payment.getKhaltiPidx()); 
+                                                                                                                 
+                                                                                                                 
             return existingResponse;
         }
 
@@ -190,7 +190,7 @@ public class PaymentService {
         if (totalPrice == null) {
             throw new RuntimeException("Booking total price is missing");
         }
-        body.put("amount", (int) (totalPrice * 100)); // paisa
+        body.put("amount", (int) (totalPrice * 100)); 
         body.put("purchase_order_id", bookingId.toString());
         body.put("purchase_order_name", "Tour Booking #" + bookingId);
 
@@ -287,8 +287,7 @@ public class PaymentService {
                 logger.debug("Khalti verification status for {}: {}", pidx, status);
 
                 if ("Completed".equalsIgnoreCase(status)) {
-                    // Ensure no other SUCCESS payment exists for same booking (Race condition
-                    // protection)
+                    // Ensure no other SUCCESS payment exists for same booking 
                     paymentRepository.findByBookingId(payment.getBookingId()).ifPresent(p -> {
                         if (p.getStatus() == PaymentStatus.SUCCESS && !p.getId().equals(payment.getId())) {
                             logger.warn("Duplicate successful payment detected for booking {}", payment.getBookingId());
@@ -324,8 +323,8 @@ public class PaymentService {
                     Booking booking = bookingRepository.findById(payment.getBookingId())
                             .orElseThrow(() -> new RuntimeException("Booking not found"));
                     
-                    payment.setBooking(booking); // Link the relationship explicitly
-                    payment.setCreatedAt(java.time.LocalDateTime.now()); // Update to actual success time
+                    payment.setBooking(booking); 
+                    payment.setCreatedAt(java.time.LocalDateTime.now()); 
                     paymentRepository.save(payment);
 
                     adminDashboardService.logActivity(

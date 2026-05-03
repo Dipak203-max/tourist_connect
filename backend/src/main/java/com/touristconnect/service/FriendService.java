@@ -28,6 +28,9 @@ public class FriendService {
     @Autowired
     private NotificationService notificationService;
 
+    @Autowired
+    private com.touristconnect.repository.UserProfileRepository userProfileRepository;
+
     @Transactional
     public String sendFriendRequest(String senderEmail, Long receiverId) {
         java.util.Objects.requireNonNull(receiverId, "Receiver ID must not be null");
@@ -164,13 +167,28 @@ public class FriendService {
                         return null;
                     }
 
+                    String profilePictureUrl = userProfileRepository.findByUserId(friend.getId())
+                            .map(com.touristconnect.entity.UserProfile::getProfilePictureUrl)
+                            .orElse(null);
+
                     return new com.touristconnect.dto.UserDto(
                             friend.getId(),
                             friend.getFullName(),
                             friend.getEmail(),
                             friend.getUsername(),
-                            null);
+                            profilePictureUrl);
                 })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<User> getFriendUsers(User user) {
+        List<FriendRequest> accepted = friendRequestRepository.findByStatusAndUser(user.getId(),
+                FriendRequestStatus.ACCEPTED);
+
+        return accepted.stream()
+                .map(fr -> fr.getSender().getId().equals(user.getId()) ? fr.getReceiver() : fr.getSender())
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
@@ -199,11 +217,30 @@ public class FriendService {
         return "NONE";
     }
 
+    @Transactional
+    public String unfriend(String email, Long friendId) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        User friend = userRepository.findById(friendId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Friend not found"));
+
+        FriendRequest request = friendRequestRepository.findAcceptedRequest(user, friend)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Friendship not found"));
+
+        friendRequestRepository.delete(request);
+        return "Unfriended successfully";
+    }
+
     private FriendRequestDto mapToDto(FriendRequest request) {
+        String senderProfilePictureUrl = userProfileRepository.findByUserId(request.getSender().getId())
+                .map(com.touristconnect.entity.UserProfile::getProfilePictureUrl)
+                .orElse(null);
+
         return new FriendRequestDto(
                 request.getId(),
                 request.getSender().getId(),
                 request.getSender().getEmail(),
+                senderProfilePictureUrl,
                 request.getReceiver().getId(),
                 request.getReceiver().getEmail(),
                 request.getStatus(),

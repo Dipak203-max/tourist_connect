@@ -43,7 +43,6 @@ public class AdminPaymentController {
             try {
                 paymentStatus = PaymentStatus.valueOf(status.toUpperCase());
             } catch (IllegalArgumentException e) {
-                // Ignore invalid status and treat as no filter
             }
         }
 

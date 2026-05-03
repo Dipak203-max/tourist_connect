@@ -12,6 +12,13 @@ import com.touristconnect.entity.Role;
 import com.touristconnect.entity.User;
 import com.touristconnect.entity.VerificationStatus;
 import com.touristconnect.repository.*;
+import com.lowagie.text.*;
+import com.lowagie.text.Font;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
+import java.awt.Color;
+import java.io.ByteArrayOutputStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -65,7 +72,7 @@ public class AdminDashboardService {
         // Simplified guide growth
         double guidesGrowth = calculateGrowth(guidesLast7, 0); 
 
-        // Trend data for sparklines (last 7 days)
+        // Trend data for sparklines 
         Double[] revenueTrend = new Double[7];
         Long[] bookingTrend = new Long[7];
         for (int i = 0; i < 7; i++) {
@@ -170,5 +177,112 @@ public class AdminDashboardService {
                 log.getReferenceId(),
                 log.getCreatedAt()
         );
+    }
+
+    public byte[] generateDashboardSummaryPdf() {
+        AdminDashboardStatsDTO stats = getDashboardStats();
+        Document document = new Document(PageSize.A4);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        try {
+            PdfWriter.getInstance(document, out);
+            document.open();
+
+            // Font styles
+            Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 22, Color.DARK_GRAY);
+            Font subHeaderFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, Color.GRAY);
+            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.BLACK);
+            Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10, Color.BLACK);
+
+            // Header
+            Paragraph header = new Paragraph("TouristConnect System Summary", headerFont);
+            header.setAlignment(Element.ALIGN_CENTER);
+            header.setSpacingAfter(10);
+            document.add(header);
+
+            Paragraph subtitle = new Paragraph("Platform Dashboard Status Report", subHeaderFont);
+            subtitle.setAlignment(Element.ALIGN_CENTER);
+            subtitle.setSpacingAfter(30);
+            document.add(subtitle);
+
+            // KPI Grid
+            PdfPTable kpiTable = new PdfPTable(2);
+            kpiTable.setWidthPercentage(100);
+            kpiTable.setSpacingAfter(20);
+
+            addKpiRow(kpiTable, "Total Users", String.valueOf(stats.getTotalUsers()), boldFont, normalFont);
+            addKpiRow(kpiTable, "Total Revenue", String.format("NPR %.2f", stats.getTotalRevenue()), boldFont, normalFont);
+            addKpiRow(kpiTable, "Total Bookings", String.valueOf(stats.getTotalBookings()), boldFont, normalFont);
+            addKpiRow(kpiTable, "Active Guides", String.valueOf(stats.getActiveGuides()), boldFont, normalFont);
+            addKpiRow(kpiTable, "Pending Verifications", String.valueOf(stats.getPendingVerifications()), boldFont, normalFont);
+
+            document.add(kpiTable);
+
+            // Growth Section
+            Paragraph growthHeader = new Paragraph("7-Day Growth Metrics", subHeaderFont);
+            growthHeader.setSpacingBefore(20);
+            growthHeader.setSpacingAfter(10);
+            document.add(growthHeader);
+
+            PdfPTable growthTable = new PdfPTable(4);
+            growthTable.setWidthPercentage(100);
+            
+            growthTable.addCell(createCell("Category", boldFont, Element.ALIGN_LEFT, true));
+            growthTable.addCell(createCell("Growth %", boldFont, Element.ALIGN_CENTER, true));
+            growthTable.addCell(createCell("Trend", boldFont, Element.ALIGN_CENTER, true));
+            growthTable.addCell(createCell("Status", boldFont, Element.ALIGN_CENTER, true));
+
+            addGrowthRow(growthTable, "User Base", stats.getUsersGrowth(), normalFont);
+            addGrowthRow(growthTable, "Revenue", stats.getRevenueGrowth(), normalFont);
+            addGrowthRow(growthTable, "Bookings", stats.getBookingsGrowth(), normalFont);
+            addGrowthRow(growthTable, "Guides", stats.getGuidesGrowth(), normalFont);
+
+            document.add(growthTable);
+
+            // Footer
+            Paragraph footer = new Paragraph("\nGenerated on: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), normalFont);
+            footer.setAlignment(Element.ALIGN_RIGHT);
+            document.add(footer);
+
+            document.close();
+        } catch (Exception e) {
+            throw new RuntimeException("Error generating Dashboard PDF", e);
+        }
+
+        return out.toByteArray();
+    }
+
+    private void addKpiRow(PdfPTable table, String label, String value, Font labelFont, Font valueFont) {
+        PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
+        labelCell.setPadding(10);
+        labelCell.setBackgroundColor(new Color(245, 245, 245));
+        table.addCell(labelCell);
+
+        PdfPCell valueCell = new PdfPCell(new Phrase(value, valueFont));
+        valueCell.setPadding(10);
+        valueCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        table.addCell(valueCell);
+    }
+
+    private void addGrowthRow(PdfPTable table, String label, double growth, Font font) {
+        table.addCell(createCell(label, font, Element.ALIGN_LEFT, false));
+        table.addCell(createCell(String.format("%.1f%%", growth), font, Element.ALIGN_CENTER, false));
+        table.addCell(createCell(growth >= 0 ? "UP" : "DOWN", font, Element.ALIGN_CENTER, false));
+        
+        PdfPCell statusCell = new PdfPCell(new Phrase(growth >= 0 ? "POSITIVE" : "NEGATIVE", font));
+        statusCell.setPadding(8);
+        statusCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        statusCell.setBackgroundColor(growth >= 0 ? new Color(230, 255, 230) : new Color(255, 230, 230));
+        table.addCell(statusCell);
+    }
+
+    private PdfPCell createCell(String text, Font font, int alignment, boolean header) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setPadding(8);
+        cell.setHorizontalAlignment(alignment);
+        if (header) {
+            cell.setBackgroundColor(Color.LIGHT_GRAY);
+        }
+        return cell;
     }
 }

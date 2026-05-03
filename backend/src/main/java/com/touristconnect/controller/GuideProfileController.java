@@ -15,6 +15,20 @@ public class GuideProfileController {
 
     @Autowired
     private GuideProfileService guideProfileService;
+    
+    @Autowired
+    private com.touristconnect.service.FileStorageService fileStorageService;
+
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadImage(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String fileUrl = fileStorageService.saveFile(file, "profiles");
+            return ResponseEntity.ok(fileUrl);
+        } catch (java.io.IOException e) {
+            log.error("Failed to upload image", e);
+            return ResponseEntity.status(500).body("Upload failed");
+        }
+    }
 
     @PostMapping
     public ResponseEntity<GuideProfileDto> createOrUpdateProfile(Authentication authentication,
@@ -35,8 +49,12 @@ public class GuideProfileController {
     }
 
     @GetMapping("/detailed/{userId}")
-    public ResponseEntity<com.touristconnect.dto.DetailedGuideProfileDto> getDetailedProfile(@PathVariable Long userId) {
-        return ResponseEntity.ok(guideProfileService.getDetailedProfile(userId));
+    public ResponseEntity<com.touristconnect.dto.DetailedGuideProfileDto> getDetailedProfile(@PathVariable String userId, Authentication authentication) {
+        if ("me".equals(userId)) {
+            String email = authentication.getName();
+            return ResponseEntity.ok(guideProfileService.getDetailedProfileByEmail(email));
+        }
+        return ResponseEntity.ok(guideProfileService.getDetailedProfile(Long.parseLong(userId)));
     }
 
     @GetMapping("/search")
@@ -57,5 +75,11 @@ public class GuideProfileController {
         Double lng = Double.valueOf(locationData.get("longitude").toString());
         String city = (String) locationData.get("city");
         return ResponseEntity.ok(guideProfileService.updateLocation(email, lat, lng, city));
+    }
+
+    @PostMapping("/offline")
+    public ResponseEntity<Void> setOffline(java.security.Principal principal) {
+        guideProfileService.updateAvailability(principal.getName(), false);
+        return ResponseEntity.ok().build();
     }
 }

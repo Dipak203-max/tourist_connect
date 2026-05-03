@@ -88,7 +88,7 @@ public class ReviewService {
                 User guide = userRepository.findById(guideId)
                                 .orElseThrow(() -> new RuntimeException("Guide not found"));
 
-                return reviewRepository.findByGuide(guide).stream()
+                return reviewRepository.findByGuideOrderByCreatedAtDesc(guide).stream()
                                 .map(this::mapToResponse)
                                 .collect(Collectors.toList());
         }

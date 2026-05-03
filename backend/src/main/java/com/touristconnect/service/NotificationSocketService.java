@@ -17,7 +17,6 @@ public class NotificationSocketService {
             try {
                 messagingTemplate.convertAndSend("/topic/notifications/" + userId, (Object) notificationDto);
             } catch (Exception e) {
-                // Log and ignore to prevent transaction rollback
                 System.err.println("Failed to send WebSocket notification to user " + userId + ": " + e.getMessage());
             }
         }

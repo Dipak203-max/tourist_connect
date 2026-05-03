@@ -17,6 +17,8 @@ import ActivityFeed from '../components/admin/ActivityFeed';
 import { format } from 'date-fns';
 import { Button, Card } from '../components/ui/BaseComponents';
 import { cn } from '../utils/cn';
+import axiosInstance from '../api/axiosInstance';
+import { toast } from 'react-hot-toast';
 
 const AdminDashboard = () => {
     const { 
@@ -39,6 +41,25 @@ const AdminDashboard = () => {
 
         return () => clearInterval(interval);
     }, [fetchDashboardData, refresh]);
+
+    const handleDownload = async () => {
+        try {
+            const response = await axiosInstance.get('/admin/dashboard/download', {
+                responseType: 'blob'
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'Dashboard-Summary.pdf');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            toast.success('Dashboard summary downloaded');
+        } catch (error) {
+            toast.error('Failed to download dashboard summary');
+            console.error(error);
+        }
+    };
 
     return (
         <div className="container mx-auto px-4 py-10 space-y-12">
@@ -74,6 +95,7 @@ const AdminDashboard = () => {
                     <Button 
                         variant="primary" 
                         className="h-10 px-4"
+                        onClick={handleDownload}
                     >
                         <Download className="w-4 h-4 mr-2" />
                         Download PDF
@@ -152,43 +174,6 @@ const AdminDashboard = () => {
                         </div>
                         <ActivityFeed activities={activities?.slice(0, 8)} />
                     </Card>
-                </div>
-            </section>
-            
-            {/* Quick Utility Section */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-slate-50 dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800">
-                    <div className="flex items-start gap-5">
-                        <div className="p-3 bg-surface-50 dark:bg-surface-900 dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-                            <Banknote className="w-6 h-6 text-slate-600 dark:text-slate-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-bold mb-2 text-slate-900 dark:text-white">Detailed Financials</h3>
-                            <p className="text-slate-600 dark:text-slate-400 text-sm mb-6 leading-relaxed">
-                                Review detailed revenue logs, tax summaries, and payout status reports.
-                            </p>
-                            <Button variant="secondary" size="sm" className="bg-surface-50 dark:bg-surface-900 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                                View Transactions
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="bg-slate-50 dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800">
-                    <div className="flex items-start gap-5">
-                        <div className="p-3 bg-surface-50 dark:bg-surface-900 dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-                            <Terminal className="w-6 h-6 text-slate-600 dark:text-slate-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-bold mb-2 text-slate-900 dark:text-white">Audit Logs</h3>
-                            <p className="text-slate-600 dark:text-slate-400 text-sm mb-6 leading-relaxed">
-                                Monitor administrative actions and system security events globally.
-                            </p>
-                            <Button variant="secondary" size="sm" className="bg-surface-50 dark:bg-surface-900 dark:bg-slate-800 border-slate-200 dark:border-slate-700">
-                                Open Audit Console
-                            </Button>
-                        </div>
-                    </div>
                 </div>
             </section>
         </div>

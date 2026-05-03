@@ -30,6 +30,8 @@ public class User {
     private boolean isVerifiedGuide = false;
     private String licenseDocumentUrl;
     private String identityDocumentUrl;
+    private String rejectionReason;
+    private String verificationCertificateUrl;
 
     @Column(nullable = false)
     private String password;
@@ -50,6 +52,9 @@ public class User {
 
     @Column(nullable = false)
     private boolean enabled = false;
+
+    @Column(nullable = false)
+    private Integer tokenVersion = 0;
 
     @org.hibernate.annotations.CreationTimestamp
     @Column(updatable = false)
@@ -184,6 +189,22 @@ public class User {
         this.identityDocumentUrl = identityDocumentUrl;
     }
 
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public void setRejectionReason(String rejectionReason) {
+        this.rejectionReason = rejectionReason;
+    }
+
+    public String getVerificationCertificateUrl() {
+        return verificationCertificateUrl;
+    }
+
+    public void setVerificationCertificateUrl(String verificationCertificateUrl) {
+        this.verificationCertificateUrl = verificationCertificateUrl;
+    }
+
     public VerificationStatus getVerificationStatus() {
         return verificationStatus;
     }
@@ -206,5 +227,25 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Integer getTokenVersion() {
+        return tokenVersion;
+    }
+
+    public void setTokenVersion(Integer tokenVersion) {
+        this.tokenVersion = tokenVersion;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User user)) return false;
+        return id != null && id.equals(user.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : getClass().hashCode();
     }
 }

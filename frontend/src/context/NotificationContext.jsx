@@ -32,12 +32,14 @@ export const NotificationProvider = ({ children }) => {
 
     // WebSocket Connection
     useEffect(() => {
-        if (!user || !user.userId) return;
+        if (!user || !user.id) return;
 
-        const unsubscribe = wsManager.subscribe(`/topic/notifications/${user.userId}`, (message) => {
+        const unsubscribe = wsManager.subscribe(`/topic/notifications/${user.id}`, (event) => {
             try {
-                const newNotification = JSON.parse(message.body);
+                const newNotification = event.payload;
                 
+                if (!newNotification) return;
+
                 setNotifications(prev => {
                     const isDuplicate = prev.some(n => n.id === newNotification.id);
                     if (isDuplicate) return prev;
@@ -58,12 +60,12 @@ export const NotificationProvider = ({ children }) => {
                     }
                 });
             } catch (e) {
-                console.error("Error parsing notification", e);
+                console.error("Error processing WebSocket notification", e);
             }
         });
 
         return () => unsubscribe();
-    }, [user?.userId]);
+    }, [user?.id]);
 
     const fetchNotifications = async () => {
         try {

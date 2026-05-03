@@ -95,20 +95,12 @@ const DestinationDetails = () => {
                         <span className="bg-blue-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
                             {destination.country || 'Nepal'}
                         </span>
-                        <div className="flex items-center gap-1 bg-surface-50 dark:bg-surface-900/20 backdrop-blur-md px-4 py-1.5 rounded-full text-xs font-bold">
-                            <StarIconSolid className="w-4 h-4 text-yellow-400" />
-                            4.8 (120+ Reviews)
-                        </div>
                     </div>
                     <h1 className="text-6xl font-black tracking-tight mb-4">{destination.name}</h1>
                     <div className="flex items-center gap-6 text-indigo-50 font-medium">
                         <div className="flex items-center gap-2">
                             <MapPinIcon className="w-5 h-5 text-red-500" />
                             {destination.city}, {destination.country || 'Nepal'}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <CalendarIcon className="w-5 h-5 text-blue-400" />
-                            Best time: Oct - Mar
                         </div>
                     </div>
                 </div>
@@ -127,25 +119,6 @@ const DestinationDetails = () => {
                             {destination.description}
                         </p>
                     </section>
-
-                    <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-indigo-50/50 border border-indigo-100 p-8 rounded-[2.5rem]">
-                            <TicketIcon className="w-8 h-8 text-indigo-600 mb-4" />
-                            <h3 className="text-xl font-black text-surface-900 dark:text-surface-100 mb-2">Activities</h3>
-                            <ul className="text-gray-600 font-medium space-y-2">
-                                <li>• Cultural Sightseeing</li>
-                                <li>• Photography Workshops</li>
-                                <li>• Local Food Tasting</li>
-                            </ul>
-                        </div>
-                        <div className="bg-emerald-50/50 border border-emerald-100 p-8 rounded-[2.5rem]">
-                            <CloudIcon className="w-8 h-8 text-emerald-600 mb-4" />
-                            <h3 className="text-xl font-black text-surface-900 dark:text-surface-100 mb-2">Climate Info</h3>
-                            <p className="text-gray-600 font-medium">
-                                Mild temperatures with clear skies during the peak season. Average 15°C - 25°C.
-                            </p>
-                        </div>
-                    </section>
                 </div>
 
                 {/* Sidebar Cards */}
@@ -159,16 +132,6 @@ const DestinationDetails = () => {
                         >
                             Find Local Guides
                         </button>
-                    </div>
-
-                    <div className="bg-gray-900 rounded-[2.5rem] p-10 text-white relative overflow-hidden">
-                        <div className="relative z-10">
-                            <h4 className="text-xl font-black mb-4">Traveler Tip</h4>
-                            <p className="text-muted font-medium leading-relaxed">
-                                Don't forget to visit during the golden hour to capture the most stunning photos of this landscape.
-                            </p>
-                        </div>
-                        <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-blue-600/20 rounded-full blur-3xl" />
                     </div>
                 </div>
             </div>

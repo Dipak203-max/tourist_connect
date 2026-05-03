@@ -17,29 +17,36 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../ui/BaseComponents';
 
+const CustomTooltip = ({ active, payload, label, activeTab }) => {
+    if (active && payload && payload.length) {
+        const isPieChart = payload[0].payload && payload[0].payload.name && !label;
+        const dataName = isPieChart ? payload[0].payload.name : label;
+        
+        return (
+            <div className="glass-card p-4 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-2xl">
+                <p className="text-[10px] font-black text-surface-400 uppercase tracking-widest mb-1">{dataName}</p>
+                <p className="text-sm font-black text-surface-900 dark:text-white">
+                    {!isPieChart && activeTab === 'revenue' && 'NPR '}
+                    {payload[0].value.toLocaleString()}
+                    {isPieChart ? ' Users' : (
+                        <>
+                            {activeTab === 'users' && ' Users'}
+                            {activeTab === 'bookings' && ' Bookings'}
+                        </>
+                    )}
+                </p>
+            </div>
+        );
+    }
+    return null;
+};
+
 const AdminCharts = ({ charts }) => {
     const [activeTab, setActiveTab] = useState('revenue');
 
     if (!charts) return null;
 
     const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444'];
-
-    const CustomTooltip = ({ active, payload, label }) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className="glass-card p-4 rounded-2xl border border-surface-200 dark:border-surface-700 shadow-2xl">
-                    <p className="text-[10px] font-black text-surface-400 uppercase tracking-widest mb-1">{label}</p>
-                    <p className="text-sm font-black text-surface-900 dark:text-white">
-                        {activeTab === 'revenue' && 'NPR '}
-                        {payload[0].value.toLocaleString()}
-                        {activeTab === 'users' && ' Users'}
-                        {activeTab === 'bookings' && ' Bookings'}
-                    </p>
-                </div>
-            );
-        }
-        return null;
-    };
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -54,7 +61,7 @@ const AdminCharts = ({ charts }) => {
                                 className={cn(
                                     "flex-1 sm:flex-none px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                                     activeTab === tab 
-                                    ? "bg-surface-50 dark:bg-surface-900 dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm" 
+                                    ? "bg-surface-50 dark:bg-surface-700 text-primary-600 dark:text-primary-400 shadow-sm" 
                                     : "text-surface-400 hover:text-surface-600 dark:hover:text-surface-300"
                                 )}
                             >
@@ -137,7 +144,7 @@ const AdminCharts = ({ charts }) => {
                 </div>
             </div>
 
-            {/* Guide Distribution (Donut Chart) */}
+            {/* Guide Distribution  Chart */}
             <div className="flex flex-col items-center">
                 <div className="h-[300px] w-full relative">
                     <ResponsiveContainer width="100%" height="100%">

@@ -1,17 +1,18 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Star, Clock, Check, DollarSign, ArrowRight } from 'lucide-react';
+import { Star, Clock, Check, DollarSign, ArrowRight, Trash2 } from 'lucide-react';
 import { Button } from '../../ui/BaseComponents';
 import { cn } from '../../../utils/cn';
 import { AnimatePresence } from 'framer-motion';
 
-const TourCard = ({ tour, isSelected, onSelect }) => {
+const TourCard = ({ tour, isSelected, onSelect, isOwner, onDelete }) => {
   return (
     <motion.div
       whileHover={{ y: -10 }}
-      onClick={onSelect}
+      onClick={() => !isOwner && onSelect()}
       className={cn(
-        "group cursor-pointer bg-white dark:bg-surface-900 rounded-[2rem] overflow-hidden border transition-all duration-300",
+        "group bg-white dark:bg-surface-900 rounded-[2rem] overflow-hidden border transition-all duration-300",
+        isOwner ? "cursor-default" : "cursor-pointer",
         isSelected 
           ? "border-primary-500 ring-4 ring-primary-500/10 shadow-2xl scale-[1.02]" 
           : "border-surface-100 dark:border-surface-800 shadow-lg hover:shadow-2xl"
@@ -32,7 +33,7 @@ const TourCard = ({ tour, isSelected, onSelect }) => {
         
         {/* Selection Badge */}
         <AnimatePresence>
-          {isSelected && (
+          {isSelected && !isOwner && (
             <motion.div 
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -58,7 +59,7 @@ const TourCard = ({ tour, isSelected, onSelect }) => {
       <div className="p-6">
         <h3 className={cn(
           "text-xl font-black mb-2 line-clamp-1 transition-colors",
-          isSelected ? "text-primary-600" : "text-surface-900 dark:text-surface-100 group-hover:text-primary-600"
+          isSelected ? "text-primary-600" : "text-surface-900 dark:text-surface-100"
         )}>
           {tour?.title}
         </h3>
@@ -79,17 +80,35 @@ const TourCard = ({ tour, isSelected, onSelect }) => {
             <span className="text-[10px] font-black text-surface-400 uppercase tracking-widest">Rate pp</span>
             <span className="text-xl font-black text-surface-900 dark:text-surface-100">${tour?.pricePerPerson}</span>
           </div>
-          <Button 
-            variant={isSelected ? "primary" : "secondary"}
-            size="md" 
-            className="rounded-2xl gap-2 font-black transition-all"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect();
-            }}
-          >
-            {isSelected ? "Selected" : "Select"}
-          </Button>
+          
+          {isOwner ? (
+            <Button 
+                variant="secondary"
+                size="md" 
+                className="rounded-2xl gap-2 font-black text-red-500 border-red-100 hover:bg-red-50 hover:border-red-200 transition-all"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm("Are you sure you want to delete this tour package?")) {
+                    onDelete(tour.id);
+                  }
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </Button>
+          ) : (
+            <Button 
+                variant={isSelected ? "primary" : "secondary"}
+                size="md" 
+                className="rounded-2xl gap-2 font-black transition-all"
+                onClick={(e) => {
+                e.stopPropagation();
+                onSelect();
+                }}
+            >
+                {isSelected ? "Selected" : "Select"}
+            </Button>
+          )}
         </div>
       </div>
     </motion.div>

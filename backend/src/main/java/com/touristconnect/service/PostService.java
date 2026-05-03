@@ -18,6 +18,9 @@ import java.util.stream.Collectors;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final com.touristconnect.repository.PostLikeRepository postLikeRepository;
+    private final com.touristconnect.repository.PostCommentRepository postCommentRepository;
+    private final com.touristconnect.repository.UserProfileRepository userProfileRepository;
     private final FileStorageService fileStorageService;
 
     @Transactional
@@ -49,27 +52,83 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> getFeed() {
+    public List<PostDto> getFeed(User currentUser) {
         return postRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(this::mapToDto)
+                .map(post -> mapToDto(post, currentUser))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> getUserPosts(User user) {
+    public List<PostDto> getUserPosts(User user, User currentUser) {
         return postRepository.findByUserOrderByCreatedAtDesc(user).stream()
-                .map(this::mapToDto)
+                .map(post -> mapToDto(post, currentUser))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<PostDto> getUserMediaPosts(User user, String type) {
+    public List<PostDto> getUserMediaPosts(User user, String type, User currentUser) {
         return postRepository.findByUserAndMediaTypeOrderByCreatedAtDesc(user, type).stream()
-                .map(this::mapToDto)
+                .map(post -> mapToDto(post, currentUser))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public PostDto toggleLike(Long postId, User user) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        java.util.Optional<com.touristconnect.entity.PostLike> existingLike = postLikeRepository.findByPostAndUser(post, user);
+        
+        if (existingLike.isPresent()) {
+            postLikeRepository.delete(existingLike.get());
+        } else {
+            postLikeRepository.save(new com.touristconnect.entity.PostLike(post, user));
+        }
+        
+        return mapToDto(post, user);
+    }
+
+    @Transactional
+    public com.touristconnect.dto.CommentDto addComment(Long postId, User user, String content) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        com.touristconnect.entity.PostComment comment = new com.touristconnect.entity.PostComment(post, user, content);
+        com.touristconnect.entity.PostComment savedComment = postCommentRepository.save(comment);
+        
+        return mapToCommentDto(savedComment);
+    }
+
+    @Transactional
+    public void deletePost(Long postId, User user) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        if (!post.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Unauthorized to delete this post");
+        }
+        
+        postRepository.delete(post);
     }
 
     private PostDto mapToDto(Post post) {
+        return mapToDto(post, null);
+    }
+
+    private PostDto mapToDto(Post post, User currentUser) {
+        List<com.touristconnect.dto.CommentDto> commentDtos = post.getComments().stream()
+                .map(this::mapToCommentDto)
+                .collect(Collectors.toList());
+
+        boolean isLiked = false;
+        if (currentUser != null) {
+            isLiked = postLikeRepository.existsByPostAndUser(post, currentUser);
+        }
+
+        String profilePictureUrl = userProfileRepository.findByUser(post.getUser())
+                .map(com.touristconnect.entity.UserProfile::getProfilePictureUrl)
+                .orElse(null);
+
         return PostDto.builder()
                 .id(post.getId())
                 .content(post.getContent())
@@ -81,6 +140,27 @@ public class PostService {
                 .userId(post.getUser().getId())
                 .username(post.getUser().getUsername())
                 .fullName(post.getUser().getFullName())
+                .profilePictureUrl(profilePictureUrl)
+                .likeCount((int) postLikeRepository.countByPost(post))
+                .commentCount((int) postCommentRepository.countByPost(post))
+                .isLikedByCurrentUser(isLiked)
+                .comments(commentDtos)
+                .build();
+    }
+
+    private com.touristconnect.dto.CommentDto mapToCommentDto(com.touristconnect.entity.PostComment comment) {
+        String profilePictureUrl = userProfileRepository.findByUser(comment.getUser())
+                .map(com.touristconnect.entity.UserProfile::getProfilePictureUrl)
+                .orElse(null);
+
+        return com.touristconnect.dto.CommentDto.builder()
+                .id(comment.getId())
+                .content(comment.getContent())
+                .createdAt(comment.getCreatedAt())
+                .userId(comment.getUser().getId())
+                .username(comment.getUser().getUsername())
+                .fullName(comment.getUser().getFullName())
+                .profilePictureUrl(profilePictureUrl)
                 .build();
     }
 }

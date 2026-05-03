@@ -32,6 +32,7 @@ export const RealTimeProvider = ({ children }) => {
             
             // Subscribe to primary user queues
             const unsubs = [
+                wsManager.subscribe(`/topic/notifications/${user.id}`, (event) => handleIncomingEvent(event)),
                 wsManager.subscribe('/user/queue/notifications', (event) => handleIncomingEvent(event)),
                 wsManager.subscribe('/user/queue/messages', (event) => handleIncomingEvent(event))
             ];
@@ -47,13 +48,21 @@ export const RealTimeProvider = ({ children }) => {
     const handleIncomingEvent = (event) => {
         setLastEvent(event);
         
-        // Notify logical event listeners
-        const typeListeners = listeners.current.get(event.type);
-        if (typeListeners) {
-            typeListeners.forEach(callback => callback(event.payload, event));
+        // 1. Notify logical topic-based listeners (e.g., NOTIFICATION_RECEIVED)
+        const logicalListeners = listeners.current.get(event.type);
+        if (logicalListeners) {
+            logicalListeners.forEach(callback => callback(event.payload, event));
         }
 
-        // Also notify wildcard/global listeners if any
+        // 2. Notify specific payload-based listeners (e.g., BOOKING_CONFIRMED)
+        if (event.payload && event.payload.type && event.payload.type !== event.type) {
+            const specificListeners = listeners.current.get(event.payload.type);
+            if (specificListeners) {
+                specificListeners.forEach(callback => callback(event.payload, event));
+            }
+        }
+
+        // 3. Notify wildcard/global listeners
         const globalListeners = listeners.current.get('*');
         if (globalListeners) {
             globalListeners.forEach(callback => callback(event.payload, event));

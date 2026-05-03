@@ -26,6 +26,7 @@ public class GuideProfileDto {
     private String phoneNumber;
     private String email;
     private boolean verified;
+    private String verificationStatus;
 
     public GuideProfileDto() {
     }
@@ -34,7 +35,7 @@ public class GuideProfileDto {
             List<String> languages, Double rating, int reviewCount, Double latitude, Double longitude, String city,
             String country, Double price, boolean available, String bio, String profilePictureUrl,
             List<String> certifications, List<String> galleryImages, String coverImageUrl, String responseTime,
-            String phoneNumber, String email, boolean verified) {
+            String phoneNumber, String email, boolean verified, String verificationStatus) {
         this.id = id;
         this.userId = userId;
         this.guideName = guideName;
@@ -58,6 +59,7 @@ public class GuideProfileDto {
         this.phoneNumber = phoneNumber;
         this.email = email;
         this.verified = verified;
+        this.verificationStatus = verificationStatus;
     }
 
     public Long getId() {
@@ -242,5 +244,13 @@ public class GuideProfileDto {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getVerificationStatus() {
+        return verificationStatus;
+    }
+
+    public void setVerificationStatus(String verificationStatus) {
+        this.verificationStatus = verificationStatus;
     }
 }

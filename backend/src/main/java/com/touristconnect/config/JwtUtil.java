@@ -17,7 +17,7 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    // 256-bit key for HS256 (Base64 encoded)
+    // 256-bit key for HS256
     private static final String SECRET_KEY = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
 
     public String extractUsername(String token) {
@@ -46,11 +46,12 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String username, String role, String authProvider, Long userId) {
+    public String generateToken(String username, String role, String authProvider, Long userId, Integer tokenVersion) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
         claims.put("authProvider", authProvider);
         claims.put("userId", userId);
+        claims.put("tokenVersion", tokenVersion);
         return createToken(claims, username);
     }
 
@@ -66,7 +67,17 @@ public class JwtUtil {
 
     public boolean validateToken(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        if (!username.equals(userDetails.getUsername()) || isTokenExpired(token)) {
+            return false;
+        }
+
+        if (userDetails instanceof com.touristconnect.dto.CustomUserDetails) {
+            Integer tokenVersion = (Integer) extractAllClaims(token).get("tokenVersion");
+            Integer currentVersion = ((com.touristconnect.dto.CustomUserDetails) userDetails).getTokenVersion();
+            return tokenVersion != null && tokenVersion.equals(currentVersion);
+        }
+
+        return true;
     }
 
     private boolean isTokenExpired(String token) {

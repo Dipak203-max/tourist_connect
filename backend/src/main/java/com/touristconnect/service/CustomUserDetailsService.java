@@ -1,5 +1,6 @@
 package com.touristconnect.service;
 
+import com.touristconnect.dto.CustomUserDetails;
 import com.touristconnect.entity.User;
 import com.touristconnect.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,11 +27,12 @@ public class CustomUserDetailsService implements UserDetailsService {
             throw new RuntimeException("Your account has been blocked by admin.");
         }
 
-        return new org.springframework.security.core.userdetails.User(
+        return new CustomUserDetails(
                 user.getEmail(),
                 user.getPassword(),
                 user.isEnabled(),
                 true, true, true,
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())));
+                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())),
+                user.getTokenVersion());
     }
 }

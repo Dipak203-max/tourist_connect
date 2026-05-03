@@ -168,13 +168,6 @@ const UserManagement = () => {
                                             >
                                                 {user.blocked ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
                                             </button>
-                                            <button 
-                                                onClick={() => handleDelete(user.id)}
-                                                className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl hover:bg-rose-100 transition-all active:scale-90"
-                                                title="Delete User"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
                                         </>
                                     )}
                                 </div>

@@ -20,7 +20,7 @@ public class Post {
 
     private String mediaUrl;
 
-    private String mediaType; // TEXT, IMAGE, VIDEO
+    private String mediaType; 
 
     private String location;
 
@@ -28,6 +28,12 @@ public class Post {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<PostLike> likes = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<PostComment> comments = new java.util.ArrayList<>();
 
     public Post() {
         this.createdAt = LocalDateTime.now();
@@ -95,5 +101,21 @@ public class Post {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public java.util.List<PostLike> getLikes() {
+        return likes;
+    }
+
+    public void setLikes(java.util.List<PostLike> likes) {
+        this.likes = likes;
+    }
+
+    public java.util.List<PostComment> getComments() {
+        return comments;
+    }
+
+    public void setComments(java.util.List<PostComment> comments) {
+        this.comments = comments;
     }
 }

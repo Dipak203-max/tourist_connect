@@ -40,10 +40,16 @@ const Chat = () => {
     }, [globalMessages, selectedConversation?.conversationId]);
 
     const filteredConversations = useMemo(() => {
-        return conversations.filter(c => 
-            c.otherUserFullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            c.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        return conversations
+            .filter(c => 
+                c.otherUserFullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                c.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+            .sort((a, b) => {
+                const timeA = new Date(a.lastMessageTime || 0).getTime();
+                const timeB = new Date(b.lastMessageTime || 0).getTime();
+                return timeB - timeA;
+            });
     }, [conversations, searchQuery]);
 
     useEffect(() => {
@@ -144,6 +150,31 @@ const Chat = () => {
         setNewMessage('');
     };
 
+    const getAvatarUrl = (url) => {
+        if (!url || url === 'null' || url === 'undefined') return null;
+        if (url.startsWith('http')) return url;
+        if (url.startsWith('/uploads')) return `http://localhost:8080${url}`;
+        if (url.startsWith('uploads')) return `http://localhost:8080/${url}`;
+        return `http://localhost:8080/uploads/${url}`;
+    };
+
+    const handleImageError = (e) => {
+        e.target.style.display = 'none';
+        e.target.nextSibling ? e.target.nextSibling.style.display = 'flex' : null;
+    };
+
+    const formatMessageTime = (dateStr) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const isToday = date.toDateString() === now.toDateString();
+        
+        if (isToday) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    };
     const renderMessageContent = (msg) => {
         if (msg.messageType === 'ITINERARY') {
             try {
@@ -195,11 +226,20 @@ const Chat = () => {
                                 >
                                     <div className="relative flex-shrink-0">
                                         <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md ring-2 ring-white ring-offset-2 ring-offset-gray-50 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                                            {conv.otherUserProfilePicture ? (
-                                                <img src={conv.otherUserProfilePicture || "/default-avatar.png"} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <User className="w-6 h-6 text-blue-300" />
+                                            {conv.otherUserProfilePicture && (
+                                                <img 
+                                                    src={getAvatarUrl(conv.otherUserProfilePicture)} 
+                                                    alt="" 
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentNode.querySelector('.avatar-fallback').style.display = 'flex';
+                                                    }}
+                                                />
                                             )}
+                                            <div className="avatar-fallback w-full h-full items-center justify-center" style={{ display: conv.otherUserProfilePicture ? 'none' : 'flex' }}>
+                                                <User className="w-6 h-6 text-blue-300" />
+                                            </div>
                                         </div>
                                         {unread > 0 && (
                                             <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-black min-w-[20px] h-5 px-1 flex items-center justify-center rounded-full shadow-lg shadow-blue-200 border-2 border-white">
@@ -212,7 +252,7 @@ const Chat = () => {
                                             <h3 className={`font-black text-sm truncate tracking-tight ${unread > 0 ? 'text-surface-900 dark:text-surface-100' : 'text-gray-700'}`}>{conv.otherUserFullName}</h3>
                                             {conv.lastMessageTime && (
                                                 <span className="text-[10px] font-black text-muted uppercase tracking-tighter ml-2">
-                                                    {new Date(conv.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {formatMessageTime(conv.lastMessageTime)}
                                                 </span>
                                             )}
                                         </div>
@@ -244,11 +284,20 @@ const Chat = () => {
                                 <div className="flex items-center gap-4">
                                     <div className="relative">
                                         <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-sm bg-surface-100 dark:bg-surface-800 flex items-center justify-center ring-2 ring-white">
-                                            {selectedConversation.otherUserProfilePicture ? (
-                                                <img src={selectedConversation.otherUserProfilePicture || "/default-avatar.png"} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <User className="w-5 h-5 text-gray-300" />
+                                            {selectedConversation.otherUserProfilePicture && (
+                                                <img 
+                                                    src={getAvatarUrl(selectedConversation.otherUserProfilePicture)} 
+                                                    alt="" 
+                                                    className="w-full h-full object-cover"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentNode.querySelector('.avatar-fallback').style.display = 'flex';
+                                                    }}
+                                                />
                                             )}
+                                            <div className="avatar-fallback w-full h-full items-center justify-center" style={{ display: selectedConversation.otherUserProfilePicture ? 'none' : 'flex' }}>
+                                                <User className="w-5 h-5 text-gray-300" />
+                                            </div>
                                         </div>
                                         <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${isConnected ? 'bg-green-500' : 'bg-gray-300'}`} />
                                     </div>
@@ -290,14 +339,21 @@ const Chat = () => {
                                             className={`flex items-end gap-3 ${isMe ? 'justify-end' : 'justify-start'}`}
                                         >
                                             {!isMe && (
-                                                <div className={`w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 transition-opacity ${showAvatar ? 'opacity-100' : 'opacity-0'}`}>
-                                                    {selectedConversation.otherUserProfilePicture ? (
-                                                        <img src={selectedConversation.otherUserProfilePicture || "/default-avatar.png"} alt="" className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-full h-full bg-blue-100 flex items-center justify-center text-[10px] font-black text-blue-600">
-                                                            {selectedConversation.otherUserFullName.charAt(0)}
-                                                        </div>
+                                                <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 transition-opacity bg-blue-50 flex items-center justify-center">
+                                                    {selectedConversation.otherUserProfilePicture && (
+                                                        <img 
+                                                            src={getAvatarUrl(selectedConversation.otherUserProfilePicture)} 
+                                                            alt="" 
+                                                            className={`w-full h-full object-cover ${showAvatar ? 'opacity-100' : 'opacity-0'}`}
+                                                            onError={(e) => {
+                                                                e.target.style.display = 'none';
+                                                                e.target.parentNode.querySelector('.avatar-fallback').style.display = 'flex';
+                                                            }}
+                                                        />
                                                     )}
+                                                    <div className="avatar-fallback w-full h-full items-center justify-center bg-blue-100 text-[10px] font-black text-blue-600" style={{ display: selectedConversation.otherUserProfilePicture ? 'none' : 'flex' }}>
+                                                        {selectedConversation.otherUserFullName.charAt(0)}
+                                                    </div>
                                                 </div>
                                             )}
                                             <div className={`group relative max-w-[75%] md:max-w-[60%] ${isMe ? 'items-end' : 'items-start'}`}>
@@ -311,7 +367,7 @@ const Chat = () => {
                                                     </div>
                                                 </div>
                                                 <span className={`text-[9px] font-black uppercase tracking-tighter mt-1.5 px-2 block transition-opacity opacity-40 group-hover:opacity-100 ${isMe ? 'text-right text-gray-500' : 'text-left text-muted'}`}>
-                                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {formatMessageTime(msg.createdAt)}
                                                 </span>
                                             </div>
                                         </motion.div>

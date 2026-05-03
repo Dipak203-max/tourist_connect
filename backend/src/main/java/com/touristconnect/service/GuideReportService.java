@@ -50,7 +50,7 @@ public class GuideReportService {
 
     private GuideReportDTO.FinancialSummaryDTO getSummary(String email, LocalDate start, LocalDate end) {
         GuideReportDTO.FinancialSummaryDTO summary = reportRepository.getGuideFinancialSummary(email, SUCCESS_STATUSES,
-                start, end);
+                start.atStartOfDay(), end.atTime(23, 59, 59, 999999999));
         if (summary == null || summary.getTotalBookings() == 0) {
             return new GuideReportDTO.FinancialSummaryDTO(0L, 0.0, 0.0, 0.0);
         }
@@ -64,15 +64,22 @@ public class GuideReportService {
     }
 
     private List<GuideReportDTO.BookingSummaryDTO> getBookings(String email, LocalDate start, LocalDate end) {
-        return reportRepository.getGuideBookingSummaries(email, SUCCESS_STATUSES, start, end);
+        return reportRepository.getGuideBookingSummaries(email, SUCCESS_STATUSES, 
+                start.atStartOfDay(), end.atTime(23, 59, 59, 999999999));
     }
 
-    public byte[] generateGuideReportPdf(String email, String type, int year, Integer month) {
+    public byte[] generateGuideReportPdf(String email, String type, int year, Integer month, Integer day) {
         GuideReportDTO.FinancialSummaryDTO summary;
         List<GuideReportDTO.BookingSummaryDTO> bookings;
         String title;
 
-        if ("monthly".equalsIgnoreCase(type)) {
+        if ("daily".equalsIgnoreCase(type) && day != null && month != null) {
+            LocalDate date = LocalDate.of(year, month, day);
+            GuideReportDTO.DailyReportDTO daily = getDailyReport(email, date.toString());
+            summary = daily.getSummary();
+            bookings = daily.getBookings();
+            title = "Daily Earnings Report - " + date.toString();
+        } else if ("monthly".equalsIgnoreCase(type) && month != null) {
             GuideReportDTO.MonthlyReportDTO monthly = getMonthlyReport(email, year, month);
             summary = monthly.getSummary();
             bookings = monthly.getBookings();

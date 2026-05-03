@@ -22,8 +22,10 @@ const adminApi = {
     
     // Guides
     getGuides: (status) => axiosInstance.get(`/admin/guides${status ? `?status=${status}` : ''}`),
-    verifyGuide: (id) => axiosInstance.post(`/admin/guides/${id}/verify`),
-    rejectGuide: (id) => axiosInstance.post(`/admin/guides/${id}/reject`),
+    verifyGuide: (id, formData) => axiosInstance.post(`/admin/guides/${id}/verify`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    rejectGuide: (id, reason) => axiosInstance.post(`/admin/guides/${id}/reject${reason ? `?reason=${encodeURIComponent(reason)}` : ''}`),
     
     // Payments
     getPayments: (params) => axiosInstance.get('/admin/payments', { params }),

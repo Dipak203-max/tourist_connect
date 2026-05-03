@@ -10,8 +10,10 @@ public class NotificationDto {
     private NotificationType type;
     private Long referenceId;
     private String redirectUrl;
+    @com.fasterxml.jackson.annotation.JsonProperty("isRead")
     private boolean isRead;
     private LocalDateTime createdAt;
+    private Long groupId;
 
     public NotificationDto() {
     }
@@ -25,6 +27,22 @@ public class NotificationDto {
         this.referenceId = referenceId;
         this.redirectUrl = redirectUrl;
         this.isRead = isRead;
+        this.createdAt = createdAt;
+    }
+
+    // Convenience constructor for real-time messages
+    public NotificationDto(String message, NotificationType type, Long referenceId, LocalDateTime createdAt) {
+        this.message = message;
+        this.type = type;
+        this.referenceId = referenceId;
+        this.createdAt = createdAt;
+    }
+
+    public NotificationDto(String message, NotificationType type, Long referenceId, Long groupId, LocalDateTime createdAt) {
+        this.message = message;
+        this.type = type;
+        this.referenceId = referenceId;
+        this.groupId = groupId;
         this.createdAt = createdAt;
     }
 
@@ -92,5 +110,13 @@ public class NotificationDto {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Long getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(Long groupId) {
+        this.groupId = groupId;
     }
 }

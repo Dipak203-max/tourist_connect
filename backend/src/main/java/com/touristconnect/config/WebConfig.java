@@ -13,6 +13,14 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(@org.springframework.lang.NonNull ResourceHandlerRegistry registry) {
         Path uploadDir = Paths.get("uploads");
+        
+        if (!java.nio.file.Files.exists(uploadDir)) {
+            Path parentUploadDir = Paths.get("..", "uploads");
+            if (java.nio.file.Files.exists(parentUploadDir)) {
+                uploadDir = parentUploadDir;
+            }
+        }
+        
         String uploadPath = uploadDir.toFile().getAbsolutePath();
 
         registry.addResourceHandler("/uploads/**")

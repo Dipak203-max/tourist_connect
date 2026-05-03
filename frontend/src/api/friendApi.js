@@ -34,3 +34,8 @@ export const getFriendshipStatus = async (userId) => {
     const response = await axiosInstance.get(`/friends/status/${userId}`);
     return response.data;
 };
+
+export const unfriendUser = async (friendId) => {
+    const response = await axiosInstance.delete(`/friends/unfriend/${friendId}`);
+    return response.data;
+};

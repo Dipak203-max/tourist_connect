@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useChat } from "../../context/ChatContext";
 import { useAuth } from "../../context/AuthContext";
 import { getGroupHistory } from '../../api/groupApi';
+import SharedItineraryCard from '../SharedItineraryCard';
 
 const GroupChat = ({ groupId, groupName }) => {
     const { isConnected } = useChat();
@@ -36,14 +37,20 @@ const GroupChat = ({ groupId, groupName }) => {
     useEffect(() => {
         if (!groupId || !isConnected) return;
 
-        console.log(`[GroupChat] Subscribing via wsManager to: /topic/group-chat/${groupId}`);
-        const unsubscribe = wsManager.subscribe(`/topic/group-chat/${groupId}`, (payload) => {
-            if (payload.body) {
-                const newMessage = JSON.parse(payload.body);
+        const unsubscribe = wsManager.subscribe(`/topic/group-chat/${groupId}`, (event) => {
+            if (event.payload) {
+                const newMessage = event.payload;
                 setMessages(prev => {
-                    // Avoid duplicates if message ID already exists
+                    // Check if this is the message we just sent optimistically (compare content and timestamp roughly)
+                    // Or more reliably, check if the ID already exists (server response will have ID)
                     if (prev.some(m => m.id === newMessage.id)) return prev;
-                    const updated = [...prev, newMessage];
+                    
+                    // Filter out our own optimistic temporary message if it matches this one
+                    const filtered = prev.filter(m => 
+                        !(m.isOptimistic && m.content === newMessage.content && m.senderId === newMessage.senderId)
+                    );
+                    
+                    const updated = [...filtered, newMessage];
                     return updated.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
                 });
                 scrollToBottom();
@@ -65,15 +72,33 @@ const GroupChat = ({ groupId, groupName }) => {
 
         const chatMessage = {
             senderId: user.id,
+            senderName: user.fullName || user.username,
             groupId: groupId,
             content: input,
             messageType: 'TEXT',
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            isOptimistic: true // Flag to identify local temporary message
         };
 
-        // Note: Destination path must match backend @MessageMapping("/chat/group/{groupId}")
+        // Optimistic Update: Add to local state immediately
+        setMessages(prev => [...prev, chatMessage]);
+        scrollToBottom();
+
+        // Send via WebSocket
         wsManager.send(`/app/chat/group/${groupId}`, chatMessage);
         setInput('');
+    };
+
+    const renderMessageContent = (msg) => {
+        if (msg.messageType === 'ITINERARY') {
+            try {
+                const itineraryData = JSON.parse(msg.content);
+                return <SharedItineraryCard itineraryData={itineraryData} />;
+            } catch (e) {
+                return <p className="text-red-500 text-xs">Error loading itinerary</p>;
+            }
+        }
+        return msg.content;
     };
 
     return (
@@ -99,8 +124,10 @@ const GroupChat = ({ groupId, groupName }) => {
                         <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[70%] rounded-lg p-3 ${isMe ? 'bg-blue-600 text-white' : 'bg-surface-50 dark:bg-surface-900 border text-gray-800'
                                 }`}>
-                                {!isMe && <p className="text-xs font-bold mb-1 text-blue-600">{msg.senderEmail}</p>}
-                                <p className="text-sm break-words">{msg.content}</p>
+                                {!isMe && <p className="text-xs font-black mb-1 text-blue-600 uppercase tracking-widest">{msg.senderName}</p>}
+                                <div className="text-sm break-words">
+                                    {renderMessageContent(msg)}
+                                </div>
                                 <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-blue-200' : 'text-muted'}`}>
                                     {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </p>

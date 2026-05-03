@@ -38,9 +38,7 @@ public class AdminBookingController {
         Page<Booking> bookingPage;
 
         if (status != null) {
-            // I need to add findByStatus in BookingRepository if I want filtering by status with pagination
-            // For now, let's use findAll and filter manually or add the method
-            bookingPage = bookingRepository.findAll(pageRequest); // Simplified for now
+            bookingPage = bookingRepository.findByStatus(status, pageRequest);
         } else {
             bookingPage = bookingRepository.findAll(pageRequest);
         }

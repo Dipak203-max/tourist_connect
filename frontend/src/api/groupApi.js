@@ -24,6 +24,11 @@ export const removeMember = async (groupId, userId) => {
     return response.data;
 };
 
+export const deleteGroup = async (groupId) => {
+    const response = await axiosInstance.delete(`/groups/${groupId}`);
+    return response.data;
+};
+
 export const getGroupHistory = async (groupId) => {
     const response = await axiosInstance.get(`/chat/group/${groupId}`);
     return response.data;

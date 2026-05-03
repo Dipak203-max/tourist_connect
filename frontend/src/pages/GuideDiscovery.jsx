@@ -3,7 +3,7 @@ import axiosInstance from '../api/axiosInstance';
 import { useNavigate } from 'react-router-dom';
 import MapView from '../components/common/MapView';
 import { calculateDistance, formatDistance } from '../utils/locationUtils';
-import { MapPinIcon, AdjustmentsHorizontalIcon, XCircleIcon } from '@heroicons/react/24/outline'; // Changed to XCircleIcon to match heroicons
+import { MapPin, Settings2, XCircle, Search, Compass, Sparkles, Navigation } from 'lucide-react';
 import FavoriteButton from '../components/common/FavoriteButton';
 
 const GuideDiscovery = () => {
@@ -23,29 +23,39 @@ const GuideDiscovery = () => {
     const [permissionDenied, setPermissionDenied] = useState(false);
 
     useEffect(() => {
-        // Get user location on mount
+        let watchId = null;
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
+            setLoading(true);
+            watchId = navigator.geolocation.watchPosition(
                 (position) => {
                     const loc = {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude
                     };
                     setUserLocation(loc);
-                    setMapCenter(loc);
+                    // Initial center only, then user can move map
+                    if (!mapCenter) setMapCenter(loc);
+                    
+                    // Fetch if first time or move significant? 
+                    // For guides, we can fetch once or on radius change.
+                    // But to be 'Live', we refresh if position changed significantly.
                     fetchAllGuides(loc);
                 },
                 (error) => {
                     console.error("Error getting location", error);
                     setPermissionDenied(true);
-                    fetchAllGuides(null);
-                }
+                    if (!userLocation) fetchAllGuides(null);
+                },
+                { enableHighAccuracy: true, distanceFilter: 100 }
             );
         } else {
-            console.error("Geolocation not supported");
             setPermissionDenied(true);
             fetchAllGuides(null);
         }
+
+        return () => {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+        };
     }, []);
 
     // Filter guides whenever filters or allGuides change
@@ -129,11 +139,20 @@ const GuideDiscovery = () => {
         <div className="flex h-[calc(100vh-6rem)]">
             {/* Sidebar List */}
             <div className="w-96 bg-surface-50 dark:bg-surface-900 flex flex-col shadow-lg z-10 border-r flex-shrink-0 md:w-80 lg:w-96">
-                <div className="p-6 border-b bg-surface-50 dark:bg-surface-900 z-10">
-                    <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center">
-                        <MapPinIcon className="w-6 h-6 mr-2 text-blue-600" />
-                        Find a Guide
-                    </h2>
+                <div className="p-6 border-b bg-surface-50 dark:bg-surface-900 z-10 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <Sparkles className="w-4 h-4 text-blue-500" />
+                                <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Discovery Engine</span>
+                            </div>
+                            <h2 className="text-2xl font-black text-surface-900 dark:text-surface-100 tracking-tight">Find Guide</h2>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/20 shadow-sm">
+                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-[9px] font-black uppercase tracking-widest">Live GPS</span>
+                        </div>
+                    </div>
 
                     <div className="space-y-3">
                         <div className="relative">
@@ -143,9 +162,9 @@ const GuideDiscovery = () => {
                                 placeholder="Search by city..."
                                 value={filters.city}
                                 onChange={handleFilterChange}
-                                className="w-full pl-10 pr-4 py-2 border rounded-lg md:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-surface-100 dark:bg-surface-800"
+                                className="w-full pl-10 pr-4 py-2.5 border rounded-xl md:text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-surface-50 dark:bg-surface-900 border-surface-200 dark:border-surface-700 shadow-sm transition-all"
                             />
-                            <AdjustmentsHorizontalIcon className="w-5 h-5 text-muted absolute left-3 top-2.5" />
+                            <Search className="w-5 h-5 text-muted absolute left-3 top-2.5" />
                         </div>
 
                         {/* Radius Toggles */}
@@ -183,8 +202,8 @@ const GuideDiscovery = () => {
 
                     <div className="space-y-3 pb-20">
                         {error && (
-                            <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-sm flex items-start gap-3">
-                                <XCircleIcon className="w-5 h-5 flex-shrink-0" />
+                            <div className="bg-rose-50 border border-rose-100 text-rose-600 p-4 rounded-xl text-sm flex items-start gap-3">
+                                <XCircle className="w-5 h-5 flex-shrink-0" />
                                 <p>{error}</p>
                             </div>
                         )}
@@ -231,13 +250,15 @@ const GuideDiscovery = () => {
                                 </div>
                             ))
                         ) : (
-                            <div className="text-center py-10 px-6 bg-surface-50 dark:bg-surface-900 rounded-xl border border-dashed">
-                                <MapPinIcon className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                                <p className="text-gray-600 font-medium text-sm">No guides found nearby.</p>
-                                <p className="text-xs text-muted mt-1">Try increasing the search radius or changing the city filter.</p>
+                            <div className="text-center py-12 px-6 bg-surface-50 dark:bg-surface-900 rounded-[2rem] border-2 border-dashed border-surface-200 dark:border-surface-700">
+                                <div className="bg-surface-100 dark:bg-surface-800 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                    <Navigation className="w-8 h-8 text-gray-300" />
+                                </div>
+                                <p className="text-surface-900 dark:text-surface-100 font-black text-sm uppercase tracking-tight">Out of Range</p>
+                                <p className="text-xs text-muted mt-2 max-w-[200px] mx-auto font-medium">Try increasing the search radius or changing the city filter.</p>
                                 {permissionDenied && (
-                                    <p className="text-xs text-red-400 mt-3 bg-red-50 p-2 rounded">
-                                        Location access was denied. Please enable location or search by city manually.
+                                    <p className="text-[10px] text-rose-500 mt-6 bg-rose-50 px-3 py-2 rounded-xl font-bold uppercase tracking-tight">
+                                        GPS Permission Denied
                                     </p>
                                 )}
                             </div>

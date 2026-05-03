@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import BookingCard from '../../components/bookings/BookingCard';
-import { useRealTime } from '../../hooks/useRealTime';
+import { useRealTime, useRealTimeStatus } from '../../hooks/useRealTime';
 import {
     Calendar,
     User,
@@ -17,13 +17,22 @@ import {
     CreditCard,
     X
 } from 'lucide-react';
+import { cn } from '../../utils/cn';
 
 const TouristBookings = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const status = useRealTimeStatus();
 
     // Centralized Real-Time Event Handling
+    useRealTime('NOTIFICATION_RECEIVED', (payload) => {
+        if (payload.type && payload.type.startsWith('BOOKING_')) {
+            console.log("[Live] Booking update received, refreshing list...");
+            fetchBookings(true);
+        }
+    });
+
     useRealTime('BOOKING_UPDATED', (payload) => {
         setBookings(prev => prev.map(booking => 
             booking.id === payload.bookingId 
@@ -32,9 +41,10 @@ const TouristBookings = () => {
         ));
     });
 
-    const fetchBookings = async () => {
+    const fetchBookings = async (force = false) => {
         try {
-            const response = await axiosInstance.get('/bookings/tourist');
+            const config = force ? { params: { _t: Date.now() } } : {};
+            const response = await axiosInstance.get('/bookings/tourist', config);
             setBookings(response.data);
         } catch (error) {
             toast.error('Failed to fetch your bookings');
@@ -123,12 +133,30 @@ const TouristBookings = () => {
     return (
         <div className="max-w-6xl mx-auto px-4 py-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-surface-900 dark:text-surface-100 tracking-tight flex items-center gap-3">
-                        <History className="w-8 h-8 text-indigo-600" />
-                        My Bookings
-                    </h1>
-                    <p className="text-gray-500 mt-1">Track your requested tours and booking history</p>
+                <div className="flex items-center gap-3">
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-surface-900 dark:text-surface-100 tracking-tight flex items-center gap-3">
+                            <History className="w-8 h-8 text-indigo-600" />
+                            My Bookings
+                        </h1>
+                        <p className="text-gray-500 mt-1">Track your requested tours and booking history</p>
+                    </div>
+                    <div className={cn(
+                        "flex items-center gap-1.5 px-3 py-1 rounded-full border shadow-sm ml-2 self-start mt-1 transition-colors",
+                        status === 'CONNECTED' ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : 
+                        status === 'CONNECTING' || status === 'RETRYING' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                        "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                    )}>
+                        <div className={cn(
+                            "w-1.5 h-1.5 rounded-full",
+                            status === 'CONNECTED' ? "bg-emerald-500 animate-pulse" : 
+                            status === 'CONNECTING' || status === 'RETRYING' ? "bg-amber-500 animate-bounce" :
+                            "bg-rose-500"
+                        )} />
+                        <span className="text-[9px] font-black uppercase tracking-widest">
+                            {status === 'CONNECTED' ? 'Live Sync' : status}
+                        </span>
+                    </div>
                 </div>
 
                 <div className="relative max-w-sm w-full">

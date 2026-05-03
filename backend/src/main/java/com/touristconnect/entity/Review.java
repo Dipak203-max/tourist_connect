@@ -28,7 +28,7 @@ public class Review {
     @Min(1)
     @Max(5)
     @Column(nullable = false)
-    private int rating; // 1-5
+    private int rating; 
 
     @Column(length = 1000)
     private String comment;

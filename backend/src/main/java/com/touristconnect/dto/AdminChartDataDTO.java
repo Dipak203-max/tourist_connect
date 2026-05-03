@@ -19,7 +19,7 @@ public class AdminChartDataDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class ChartDataPoint {
-        private String label; // e.g., "Mon", "Jan", "2024-03-21"
+        private String label; 
         private Double value;
     }
 

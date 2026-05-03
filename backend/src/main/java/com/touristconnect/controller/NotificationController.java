@@ -30,10 +30,28 @@ public class NotificationController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/read-group/{groupId}")
+    public ResponseEntity<Void> markGroupAsRead(@PathVariable @NonNull Long groupId, Authentication authentication) {
+        notificationService.markGroupNotificationsAsRead(groupId, Objects.requireNonNull(authentication.getName()));
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount(Authentication authentication) {
         String email = Objects.requireNonNull(authentication.getName());
         return ResponseEntity.ok(notificationService.getUnreadCount(email));
+    }
+
+    @GetMapping("/unread-group-count")
+    public ResponseEntity<Long> getGroupUnreadCount(Authentication authentication) {
+        String email = Objects.requireNonNull(authentication.getName());
+        return ResponseEntity.ok(notificationService.getGroupUnreadCount(email));
+    }
+
+    @GetMapping("/unread-group-counts-map")
+    public ResponseEntity<java.util.Map<Long, Long>> getGroupUnreadCountsMap(Authentication authentication) {
+        String email = Objects.requireNonNull(authentication.getName());
+        return ResponseEntity.ok(notificationService.getGroupUnreadCountsMap(email));
     }
 
     @PutMapping("/read-all")

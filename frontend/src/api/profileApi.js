@@ -16,3 +16,13 @@ export const getUserProfile = async (userId) => {
     const response = await axiosInstance.get(`${API_URL}/${userId}`);
     return response.data;
 };
+export const uploadProfilePicture = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axiosInstance.post('/users/upload-profile-picture', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+};

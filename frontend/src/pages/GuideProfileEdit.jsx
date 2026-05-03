@@ -1,18 +1,24 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { getMyGuideProfile, updateGuideProfile } from '../api/guideApi';
+import { getMyGuideProfile, updateGuideProfile, uploadGuideImage } from '../api/guideApi';
 import { Button, Card, Input } from '../components/ui/BaseComponents';
-import { Save, Camera, Plus, X, Globe, DollarSign, Award, Clock, Phone, Mail, Info, Image as ImageIcon } from 'lucide-react';
+import { Save, Camera, Plus, X, Globe, DollarSign, Award, Clock, Phone, Mail, Info, Image as ImageIcon, Map as MapIcon, Trash2, Upload } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import PageLoader from '../components/common/PageLoader';
+import { getToursByGuide, createTourPackage, deleteTourPackage } from '../api/tourApi';
 
 const GuideProfileEdit = () => {
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    
+    const coverInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
+    const tourInputRef = useRef(null);
     
     const [formData, setFormData] = useState({
         specialization: '',
@@ -35,6 +41,28 @@ const GuideProfileEdit = () => {
     const [newLang, setNewLang] = useState('');
     const [newGalleryUrl, setNewGalleryUrl] = useState('');
 
+    const [tours, setTours] = useState([]);
+    const [showTourForm, setShowTourForm] = useState(false);
+    const [newTour, setNewTour] = useState({
+        title: '',
+        description: '',
+        pricePerPerson: '',
+        duration: '',
+        imageUrl: '',
+        category: 'Adventure'
+    });
+
+    const loadTours = async () => {
+        try {
+            if (user?.id) {
+                const data = await getToursByGuide(user.id);
+                setTours(data);
+            }
+        } catch (error) {
+            console.error("Failed to load tours", error);
+        }
+    };
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -45,6 +73,7 @@ const GuideProfileEdit = () => {
                     certifications: data.certifications || [],
                     galleryImages: data.galleryImages || []
                 });
+                await loadTours();
             } catch (error) {
                 console.error("Failed to fetch profile", error);
                 toast.error("Failed to load profile data.");
@@ -53,7 +82,41 @@ const GuideProfileEdit = () => {
             }
         };
         fetchProfile();
-    }, []);
+    }, [user?.id]);
+
+    const handleAddTour = async (e) => {
+        e.preventDefault();
+        try {
+            await createTourPackage({
+                ...newTour,
+                pricePerPerson: parseFloat(newTour.pricePerPerson) || 0
+            });
+            toast.success("Tour package added!");
+            setNewTour({
+                title: '',
+                description: '',
+                pricePerPerson: '',
+                duration: '',
+                imageUrl: '',
+                category: 'Adventure'
+            });
+            setShowTourForm(false);
+            loadTours();
+        } catch (error) {
+            toast.error("Failed to add tour package.");
+        }
+    };
+
+    const handleDeleteTour = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this tour package?")) return;
+        try {
+            await deleteTourPackage(id);
+            toast.success("Tour package deleted.");
+            loadTours();
+        } catch (error) {
+            toast.error("Failed to delete tour package.");
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -81,6 +144,46 @@ const GuideProfileEdit = () => {
             ...prev,
             [field]: prev[field].filter((_, i) => i !== index)
         }));
+    };
+
+    const handleFileUpload = async (e, type) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Basic validation
+        if (!file.type.startsWith('image/')) {
+            toast.error("Please select an image file.");
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error("File size should be less than 5MB.");
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const fileUrl = await uploadGuideImage(file);
+            const fullUrl = `http://localhost:8080${fileUrl}`;
+
+            if (type === 'cover') {
+                setFormData(prev => ({ ...prev, coverImageUrl: fullUrl }));
+                toast.success("Cover image uploaded!");
+            } else if (type === 'gallery') {
+                setFormData(prev => ({
+                    ...prev,
+                    galleryImages: [...prev.galleryImages, fullUrl]
+                }));
+                toast.success("Image added to gallery!");
+            } else if (type === 'tour') {
+                setNewTour(prev => ({ ...prev, imageUrl: fullUrl }));
+                toast.success("Tour image uploaded!");
+            }
+        } catch (error) {
+            console.error("Upload failed", error);
+            toast.error("Failed to upload image.");
+        } finally {
+            setUploading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -130,11 +233,27 @@ const GuideProfileEdit = () => {
                                 <div className="flex gap-4">
                                     <Input 
                                         name="coverImageUrl"
-                                        value={formData.coverImageUrl}
+                                        value={formData.coverImageUrl || ''}
                                         onChange={handleChange}
                                         placeholder="https://images.unsplash.com/..."
                                         className="flex-1"
                                     />
+                                    <input 
+                                        type="file" 
+                                        hidden 
+                                        ref={coverInputRef}
+                                        onChange={(e) => handleFileUpload(e, 'cover')}
+                                        accept="image/*"
+                                    />
+                                    <Button 
+                                        type="button" 
+                                        variant="secondary" 
+                                        className="gap-2"
+                                        onClick={() => coverInputRef.current.click()}
+                                        isLoading={uploading}
+                                    >
+                                        <Upload className="w-4 h-4" /> Upload
+                                    </Button>
                                 </div>
                                 {formData.coverImageUrl && (
                                     <div className="mt-4 h-40 w-full rounded-2xl overflow-hidden border border-surface-100 dark:border-surface-800">
@@ -152,6 +271,22 @@ const GuideProfileEdit = () => {
                                         placeholder="Add image URL to gallery..."
                                         className="flex-1"
                                     />
+                                    <input 
+                                        type="file" 
+                                        hidden 
+                                        ref={galleryInputRef}
+                                        onChange={(e) => handleFileUpload(e, 'gallery')}
+                                        accept="image/*"
+                                    />
+                                    <Button 
+                                        type="button" 
+                                        variant="secondary" 
+                                        onClick={() => galleryInputRef.current.click()}
+                                        isLoading={uploading}
+                                        title="Upload local image"
+                                    >
+                                        <Upload className="w-5 h-5" />
+                                    </Button>
                                     <Button type="button" variant="secondary" onClick={() => handleAddList('galleryImages', newGalleryUrl, setNewGalleryUrl)}>
                                         <Plus className="w-5 h-5" />
                                     </Button>
@@ -184,7 +319,7 @@ const GuideProfileEdit = () => {
                                 <label className="block text-xs font-black text-surface-400 uppercase tracking-widest mb-2">Primary Specialization</label>
                                 <Input 
                                     name="specialization"
-                                    value={formData.specialization}
+                                    value={formData.specialization || ''}
                                     onChange={handleChange}
                                     placeholder="e.g. Mountaineering Expert"
                                 />
@@ -217,7 +352,7 @@ const GuideProfileEdit = () => {
                                     <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
                                     <select 
                                         name="responseTime"
-                                        value={formData.responseTime}
+                                        value={formData.responseTime || 'Within 1 hour'}
                                         onChange={handleChange}
                                         className="w-full h-[54px] pl-10 pr-4 bg-surface-50 dark:bg-surface-800 border-none rounded-2xl font-bold focus:ring-2 focus:ring-primary-500/20 text-surface-900 dark:text-white appearance-none"
                                     >
@@ -306,7 +441,7 @@ const GuideProfileEdit = () => {
                                 <label className="block text-xs font-black text-surface-400 uppercase tracking-widest mb-2">Public Contact Number</label>
                                 <Input 
                                     name="phoneNumber"
-                                    value={formData.phoneNumber === 'null' ? '' : formData.phoneNumber}
+                                    value={formData.phoneNumber === 'null' ? '' : (formData.phoneNumber || '')}
                                     onChange={handleChange}
                                     placeholder="+977 98..."
                                 />
@@ -322,6 +457,112 @@ const GuideProfileEdit = () => {
                                 />
                                 <p className="mt-1 text-[10px] font-bold text-surface-400 italic">Email can only be changed via security settings.</p>
                             </div>
+                        </div>
+                    </Card>
+
+                    {/* Tour Packages Section */}
+                    <Card className="p-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-black text-surface-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                                <MapIcon className="w-5 h-5 text-primary-500" /> Tour Packages
+                            </h3>
+                            {!showTourForm && (
+                                <Button type="button" onClick={() => setShowTourForm(true)} size="sm" variant="secondary" className="gap-2">
+                                    <Plus className="w-4 h-4" /> Add Package
+                                </Button>
+                            )}
+                        </div>
+
+                        {showTourForm && (
+                            <div className="bg-surface-100 dark:bg-surface-800/50 p-6 rounded-2xl border border-surface-200 dark:border-surface-700 mb-8 space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <Input 
+                                        label="Package Title"
+                                        value={newTour.title}
+                                        onChange={(e) => setNewTour({...newTour, title: e.target.value})}
+                                        placeholder="e.g. Everest Base Camp Trek"
+                                    />
+                                    <Input 
+                                        label="Price (USD per person)"
+                                        type="number"
+                                        value={newTour.pricePerPerson}
+                                        onChange={(e) => setNewTour({...newTour, pricePerPerson: e.target.value})}
+                                    />
+                                    <Input 
+                                        label="Duration"
+                                        value={newTour.duration}
+                                        onChange={(e) => setNewTour({...newTour, duration: e.target.value})}
+                                        placeholder="e.g. 12 Days"
+                                    />
+                                    <div className="space-y-2">
+                                        <Input 
+                                            label="Image URL"
+                                            value={newTour.imageUrl}
+                                            onChange={(e) => setNewTour({...newTour, imageUrl: e.target.value})}
+                                            placeholder="https://images.unsplash.com/..."
+                                        />
+                                        <input 
+                                            type="file" 
+                                            hidden 
+                                            ref={tourInputRef}
+                                            onChange={(e) => handleFileUpload(e, 'tour')}
+                                            accept="image/*"
+                                        />
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="w-full gap-2 border-2 border-dashed border-surface-200 dark:border-surface-700 h-12"
+                                            onClick={() => tourInputRef.current.click()}
+                                            isLoading={uploading}
+                                        >
+                                            <Upload className="w-4 h-4" /> Upload Local Image
+                                        </Button>
+                                    </div>
+                                </div>
+                                <textarea 
+                                    placeholder="Detailed description of the tour..."
+                                    value={newTour.description}
+                                    onChange={(e) => setNewTour({...newTour, description: e.target.value})}
+                                    className="w-full p-4 bg-surface-50 dark:bg-surface-900 border-none rounded-xl font-medium focus:ring-2 focus:ring-primary-500/20 text-surface-900 dark:text-white min-h-[100px] resize-none"
+                                />
+                                <div className="flex gap-2 justify-end">
+                                    <Button type="button" variant="ghost" onClick={() => setShowTourForm(false)}>Cancel</Button>
+                                    <Button type="button" onClick={handleAddTour}>Save Package</Button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            {tours.length === 0 ? (
+                                <div className="text-center py-12 px-4 border-2 border-dashed border-surface-200 dark:border-surface-700 rounded-3xl opacity-50">
+                                    <p className="font-bold text-surface-400">No tour packages added yet. Start by adding one!</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {tours.map(tour => (
+                                        <div key={tour.id} className="group relative bg-surface-50 dark:bg-surface-800/80 p-4 rounded-2xl border border-surface-100 dark:border-surface-700 flex gap-4 overflow-hidden">
+                                            {tour.imageUrl && (
+                                                <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
+                                                    <img src={tour.imageUrl} className="w-full h-full object-cover" alt="" />
+                                                </div>
+                                            )}
+                                            <div className="flex-1 min-w-0 pr-10">
+                                                <h4 className="font-black text-surface-900 dark:text-white truncate uppercase tracking-tight">{tour.title}</h4>
+                                                <p className="text-xs text-muted font-bold">${tour.pricePerPerson} • {tour.duration}</p>
+                                                <p className="text-[10px] text-surface-400 mt-1 line-clamp-2">{tour.description}</p>
+                                            </div>
+                                            <button 
+                                                type="button"
+                                                onClick={() => handleDeleteTour(tour.id)}
+                                                className="absolute top-4 right-4 p-2.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </Card>
                 </form>

@@ -25,32 +25,50 @@ public class NotificationService {
     @Autowired
     private NotificationSocketService notificationSocketService;
 
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @Transactional
     public com.touristconnect.dto.NotificationDto createNotification(@NonNull User user, @NonNull String message,
             @NonNull NotificationType type,
-            Long referenceId, String redirectUrl) {
+            Long referenceId, String redirectUrl, Long groupId) {
         Notification notification = new Notification(user, message, type, referenceId, redirectUrl);
+        notification.setGroupId(groupId);
         Notification savedNotification = notificationRepository.save(notification);
 
         com.touristconnect.dto.NotificationDto dto = toNotificationDto(savedNotification);
 
-        // Send real-time notification to specific topic
+        // Send real-time notification to specific topic after transaction commits
         try {
-            notificationSocketService.sendNotification(user.getId(), dto);
+            if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+                org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                        new org.springframework.transaction.support.TransactionSynchronization() {
+                            @Override
+                            public void afterCommit() {
+                                notificationSocketService.sendNotification(user.getId(), dto);
+                            }
+                        });
+            } else {
+                notificationSocketService.sendNotification(user.getId(), dto);
+            }
         } catch (Exception e) {
-            System.err.println("WebSocket failed (non-blocking): " + e.getMessage());
+            System.err.println("WebSocket scheduling failed: " + e.getMessage());
         }
 
         return dto;
     }
 
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @Transactional
+    public com.touristconnect.dto.NotificationDto createNotification(@NonNull User user, @NonNull String message,
+            @NonNull NotificationType type,
+            Long referenceId, String redirectUrl) {
+        return createNotification(user, message, type, referenceId, redirectUrl, null);
+    }
+
+    @Transactional
     public com.touristconnect.dto.NotificationDto createNotification(@NonNull User user, @NonNull String message,
             @NonNull NotificationType type, Long referenceId) {
         return createNotification(user, message, type, referenceId, null);
     }
 
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @Transactional
     public com.touristconnect.dto.NotificationDto createNotification(@NonNull User user, @NonNull String message,
             @NonNull NotificationType type) {
         return createNotification(user, message, type, null, null);
@@ -68,7 +86,39 @@ public class NotificationService {
     public long getUnreadCount(@NonNull String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return notificationRepository.countByUserAndIsReadFalse(user);
+        return notificationRepository.countByUserAndIsReadFalseAndTypeNot(user, NotificationType.MESSAGE);
+    }
+
+    @Transactional(readOnly = true)
+    public long getGroupUnreadCount(@NonNull String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        // Filter out notifications for groups the user is no longer a member of
+        return notificationRepository.countUnreadForActiveGroups(user, NotificationType.MESSAGE);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Map<Long, Long> getGroupUnreadCountsMap(@NonNull String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Filter out notifications for groups the user is no longer a member of
+        List<Notification> unreadGroupNotifs = notificationRepository.findUnreadForActiveGroups(user, NotificationType.MESSAGE);
+        
+        return unreadGroupNotifs.stream()
+                .filter(n -> n.getGroupId() != null)
+                .collect(java.util.stream.Collectors.groupingBy(
+                        Notification::getGroupId,
+                        java.util.stream.Collectors.counting()
+                ));
+    }
+
+    @Transactional
+    public void markGroupNotificationsAsRead(Long groupId, @NonNull String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        notificationRepository.markGroupNotificationsAsRead(user, groupId);
     }
 
     @Transactional
@@ -99,7 +149,7 @@ public class NotificationService {
 
     @NonNull
     private com.touristconnect.dto.NotificationDto toNotificationDto(Notification notification) {
-        return new com.touristconnect.dto.NotificationDto(
+        com.touristconnect.dto.NotificationDto dto = new com.touristconnect.dto.NotificationDto(
                 notification.getId(),
                 notification.getUser().getId(),
                 notification.getMessage(),
@@ -108,5 +158,7 @@ public class NotificationService {
                 notification.getRedirectUrl(),
                 notification.isRead(),
                 notification.getCreatedAt());
+        dto.setGroupId(notification.getGroupId());
+        return dto;
     }
 }

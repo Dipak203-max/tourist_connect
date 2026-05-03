@@ -3,15 +3,7 @@ import { Calendar, Users, Info, ShieldCheck, ChevronDown, Check, AlertCircle } f
 import { Button, Card, Input } from '../../ui/BaseComponents';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const BookingSidebar = ({ guide, selectedTour, onBook }) => {
-  const [guests, setGuests] = useState(1);
-  const [selectedDate, setSelectedDate] = useState(() => {
-    // Set default to tomorrow's date (or today if preferred)
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
-  });
-
+const BookingSidebar = ({ guide, selectedTour, guests, setGuests, selectedDate, setSelectedDate, onBook }) => {
   const unitPrice = selectedTour?.pricePerPerson || guide?.price || 0;
 
   const total = useMemo(() => {
@@ -47,22 +39,19 @@ const BookingSidebar = ({ guide, selectedTour, onBook }) => {
 
         <div className="space-y-4 mb-8">
           <div className="relative">
-            <label className="text-[10px] font-black text-surface-400 uppercase tracking-widest absolute top-2.5 left-4 z-10">Select Date</label>
-            <div className="relative">
-  <label className="text-[10px] font-black text-surface-400 uppercase tracking-widest absolute top-2.5 left-4 z-10">
-    Select Date
-  </label>
+            <label className="text-[10px] font-black text-surface-400 uppercase tracking-widest absolute top-2.5 left-4 z-10">
+              Select Date
+            </label>
 
-  <input
-    type="date"
-    value={selectedDate}
-    onChange={(e) => setSelectedDate(e.target.value)}
-    min={new Date().toISOString().split('T')[0]}
-    className="w-full p-4 pt-7 bg-surface-50 dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700 font-bold text-surface-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 outline-none"
-  />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full p-4 pt-7 bg-surface-50 dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700 font-bold text-surface-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 outline-none"
+            />
 
-  <Calendar className="w-5 h-5 text-primary-500 absolute bottom-4 left-4 pointer-events-none" />
-</div>
+            <Calendar className="w-5 h-5 text-primary-500 absolute bottom-4 left-4 pointer-events-none" />
           </div>
 
           <div className="relative">

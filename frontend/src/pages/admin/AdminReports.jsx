@@ -66,6 +66,7 @@ const AdminReports = () => {
                 const d = new Date(selectedDate);
                 params.year = d.getFullYear();
                 params.month = d.getMonth() + 1;
+                params.day = d.getDate();
             }
             else if (activeTab === 'monthly') {
                 params.year = selectedYear;

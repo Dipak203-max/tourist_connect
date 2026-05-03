@@ -30,9 +30,9 @@ public class AdminActivityLog {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User user; // The user who performed the action or is related to it
+    private User user; 
 
-    private String referenceId; // e.g., Booking ID, Payment ID
+    private String referenceId; 
 
     @CreationTimestamp
     @Column(updatable = false)

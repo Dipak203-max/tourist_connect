@@ -10,6 +10,6 @@ import java.util.List;
 
 public interface ChatGroupRepository extends JpaRepository<ChatGroup, Long> {
 
-    @Query("SELECT cg FROM ChatGroup cg JOIN cg.members m WHERE m = :user")
+    @Query("SELECT cg FROM ChatGroup cg JOIN cg.members m WHERE m = :user ORDER BY cg.id DESC")
     List<ChatGroup> findByMember(@Param("user") User user);
 }

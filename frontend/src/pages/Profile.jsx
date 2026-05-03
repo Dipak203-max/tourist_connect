@@ -13,14 +13,18 @@ import {
     Twitter, 
     Info, 
     X, 
+    Trash2,
     AlertCircle,
     MapPin,
     Calendar
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getMyProfile, getUserProfile, updateProfile } from '../api/profileApi';
+import { getMyProfile, getUserProfile, updateProfile, uploadProfilePicture } from '../api/profileApi';
 import { Button, Card, Input, cn } from '../components/ui/BaseComponents';
 import ProfileFeed from '../components/posts/ProfileFeed';
+import { getUserStories, deleteStory } from '../api/storyApi';
+import { Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import CreateStoryModal from '../components/stories/CreateStoryModal';
 
 const Profile = () => {
     const { id } = useParams();
@@ -45,6 +49,10 @@ const Profile = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('posts');
     const [error, setError] = useState(null);
+    const [userStories, setUserStories] = useState([]);
+    const [selectedStory, setSelectedStory] = useState(null);
+    const [storyIndex, setStoryIndex] = useState(0);
+    const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
 
     // Form state for modal
     const [formData, setFormData] = useState({
@@ -58,11 +66,34 @@ const Profile = () => {
     useEffect(() => {
         if (profileId) {
             loadProfile(profileId);
+            loadUserStories(profileId);
         } else {
             setLoading(false);
             setError("Profile not found");
         }
     }, [profileId]);
+
+    const loadUserStories = async (pid) => {
+        try {
+            const stories = await getUserStories(pid);
+            setUserStories(stories);
+        } catch (err) {
+            console.error("Failed to load stories", err);
+        }
+    };
+
+    const handleDeleteStory = async (storyId) => {
+        if (!window.confirm("Are you sure you want to delete this story?")) return;
+        try {
+            await deleteStory(storyId);
+            toast.success("Story deleted!");
+            setSelectedStory(null);
+            loadUserStories(profileId);
+        } catch (err) {
+            toast.error("Failed to delete story");
+            console.error(err);
+        }
+    };
 
     const loadProfile = async (pid) => {
         setLoading(true);
@@ -135,6 +166,32 @@ const Profile = () => {
         });
     };
 
+    const fileInputRef = React.useRef(null);
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const promise = (async () => {
+            const fileUrl = await uploadProfilePicture(file);
+            const fullUrl = `http://localhost:8080${fileUrl}`;
+            
+            setProfile(prev => ({ ...prev, profilePictureUrl: fullUrl }));
+            
+            if (updateUser) {
+                updateUser({ ...user, profilePictureUrl: fullUrl });
+            }
+            
+            return "Profile picture updated!";
+        })();
+
+        toast.promise(promise, {
+            loading: 'Uploading...',
+            success: (msg) => msg,
+            error: 'Failed to upload image.'
+        });
+    };
+
     const handleMessage = () => {
         if (!profile.id) return;
         navigate('/chat', { state: { openChatWith: profile.id } });
@@ -144,6 +201,12 @@ const Profile = () => {
         if (!dateString) return "Joined May 2024";
         const date = new Date(dateString);
         return `Joined ${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}`;
+    };
+
+    const getProfileImageUrl = (url) => {
+        if (!url) return null;
+        if (url.startsWith('http')) return url;
+        return `http://localhost:8080${url}`;
     };
 
     if (loading) {
@@ -197,20 +260,48 @@ const Profile = () => {
                 <div className="px-6 md:px-12 pb-8">
                     <div className="flex flex-col md:flex-row md:items-end gap-6 -mt-12 md:-mt-16 mb-8">
                         <div className="relative group shrink-0">
-                            <div className="w-40 h-40 md:w-48 md:h-48 rounded-[2.5rem] border-8 border-white dark:border-surface-900 overflow-hidden bg-surface-100 dark:bg-surface-800 shadow-premium relative z-10 transition-transform hover:scale-[1.02]">
+                            <div 
+                                onClick={() => userStories.length > 0 && setSelectedStory(userStories[0])}
+                                className={cn(
+                                    "w-40 h-40 md:w-48 md:h-48 rounded-[2.5rem] border-8 border-white dark:border-surface-900 overflow-hidden bg-surface-100 dark:bg-surface-800 shadow-premium relative z-10 transition-transform",
+                                    userStories.length > 0 ? "cursor-pointer ring-4 ring-primary-500 ring-offset-4 dark:ring-offset-surface-900 animate-pulse-slow scale-[1.02]" : "hover:scale-[1.02]"
+                                )}
+                            >
                                 <img
-                                    src={profile.profilePictureUrl || `https://ui-avatars.com/api/?name=${profile.fullName || profile.email}&background=random&size=200`}
+                                    src={getProfileImageUrl(profile.profilePictureUrl) || `https://ui-avatars.com/api/?name=${profile.fullName || profile.email}&background=random&size=200`}
                                     alt="Avatar"
                                     className="w-full h-full object-cover"
                                 />
+                                {userStories.length > 0 && (
+                                    <div className="absolute inset-0 bg-primary-500/10 flex items-center justify-center">
+                                        <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-widest">View Story</div>
+                                    </div>
+                                )}
                             </div>
                             {isOwner && (
-                                <button
-                                    onClick={() => setIsEditModalOpen(true)}
-                                    className="absolute bottom-2 right-2 z-20 bg-primary-600 text-white p-2.5 rounded-2xl shadow-xl hover:bg-primary-700 transition-all"
-                                >
-                                    <Camera size={18} />
-                                </button>
+                                <div className="absolute bottom-2 right-2 z-20 flex flex-col gap-2">
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileChange}
+                                        className="hidden"
+                                        accept="image/*"
+                                    />
+                                    <button
+                                        onClick={() => fileInputRef.current.click()}
+                                        className="bg-primary-600 text-white p-2.5 rounded-2xl shadow-xl hover:bg-primary-700 transition-all"
+                                        title="Upload Profile Picture"
+                                    >
+                                        <Camera size={18} />
+                                    </button>
+                                    <button
+                                        onClick={() => setIsStoryModalOpen(true)}
+                                        className="bg-indigo-600 text-white p-2.5 rounded-2xl shadow-xl hover:bg-indigo-700 transition-all"
+                                        title="Create Story"
+                                    >
+                                        <Plus size={18} />
+                                    </button>
+                                </div>
                             )}
                         </div>
 
@@ -234,7 +325,7 @@ const Profile = () => {
                             {isOwner ? (
                                 <>
                                     <Button
-                                        onClick={() => setIsEditModalOpen(true)}
+                                        onClick={() => setIsStoryModalOpen(true)}
                                         className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs gap-2 shadow-premium"
                                     >
                                         <Plus size={18} />
@@ -504,6 +595,123 @@ const Profile = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Story Viewer Modal */}
+            <AnimatePresence>
+                {selectedStory && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 md:p-8"
+                    >
+                        <div className="relative w-full max-w-lg aspect-[9/16] bg-surface-900 rounded-3xl overflow-hidden shadow-2xl">
+                            {/* Progress Bars */}
+                            <div className="absolute top-4 inset-x-4 flex gap-1 z-20">
+                                {userStories.map((_, i) => (
+                                    <div key={i} className="h-1 flex-1 bg-white/20 rounded-full overflow-hidden">
+                                        {i === storyIndex && (
+                                            <motion.div 
+                                                initial={{ width: 0 }}
+                                                animate={{ width: "100%" }}
+                                                transition={{ duration: 5, ease: "linear" }}
+                                                onAnimationComplete={() => {
+                                                    if (storyIndex < userStories.length - 1) {
+                                                        setStoryIndex(storyIndex + 1);
+                                                        setSelectedStory(userStories[storyIndex + 1]);
+                                                    } else {
+                                                        setSelectedStory(null);
+                                                    }
+                                                }}
+                                                className="h-full bg-white"
+                                            />
+                                        )}
+                                        {i < storyIndex && <div className="h-full bg-white" />}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Header */}
+                            <div className="absolute top-8 inset-x-4 flex items-center justify-between z-40">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-surface-700">
+                                        <img 
+                                            src={getProfileImageUrl(profile.profilePictureUrl) || `https://ui-avatars.com/api/?name=${profile.fullName || profile.email}`} 
+                                            alt="" 
+                                            className="w-full h-full object-cover" 
+                                        />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-white text-sm">{profile.fullName}</p>
+                                        <p className="text-white/60 text-xs flex items-center gap-1">
+                                            <Clock className="w-3 h-3" /> 24h
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {isOwner && (
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteStory(selectedStory.id);
+                                            }} 
+                                            className="p-2 text-red-400 hover:text-red-500 hover:bg-white/10 rounded-full transition-all relative z-50"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedStory(null);
+                                        }} 
+                                        className="p-2 text-white/70 hover:text-white relative z-50"
+                                    >
+                                        <X className="w-6 h-6" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Main Media */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                {selectedStory.mediaUrls?.[0] ? (
+                                    <img 
+                                        src={`http://localhost:8080${selectedStory.mediaUrls[0]}`} 
+                                        alt="" 
+                                        className="w-full h-full object-contain md:object-cover"
+                                    />
+                                ) : (
+                                    <div className="text-white text-center p-8">
+                                        <h3 className="text-2xl font-bold">{selectedStory.title}</h3>
+                                        <p className="mt-4">{selectedStory.content}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Content / Caption */}
+                            <div className="absolute bottom-0 inset-x-0 p-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10">
+                                {selectedStory.location && (
+                                    <div className="flex items-center gap-1 text-white/80 text-xs mb-2">
+                                        <MapPin className="w-3 h-3" /> {selectedStory.location}
+                                    </div>
+                                )}
+                                <h3 className="text-white font-bold text-lg leading-tight mb-2">
+                                    {selectedStory.title}
+                                </h3>
+                                <p className="text-white/90 text-sm line-clamp-3">
+                                    {selectedStory.content}
+                                </p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <CreateStoryModal 
+                isOpen={isStoryModalOpen} 
+                onClose={() => setIsStoryModalOpen(false)} 
+                onRefresh={() => loadUserStories(profileId)} 
+            />
         </div>
     );
 };
@@ -542,7 +750,7 @@ const FriendsSection = ({ userId, onFriendClick }) => {
                             className="p-4 bg-surface-50 dark:bg-surface-800/50 rounded-2xl flex flex-col items-center gap-3 hover:bg-surface-100 dark:hover:bg-surface-800 transition-all cursor-pointer group"
                         >
                             <img
-                                src={friend.profilePictureUrl || `https://ui-avatars.com/api/?name=${friend.fullName || friend.email}&background=random`}
+                                src={friend.profilePictureUrl ? (friend.profilePictureUrl.startsWith('http') ? friend.profilePictureUrl : `http://localhost:8080${friend.profilePictureUrl}`) : `https://ui-avatars.com/api/?name=${friend.fullName || friend.email}&background=random`}
                                 className="w-16 h-16 rounded-full shadow-inner"
                                 alt="Friend"
                             />

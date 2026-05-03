@@ -40,30 +40,68 @@ public class PostController {
     }
 
     @GetMapping("/feed")
-    public ResponseEntity<List<PostDto>> getFeed() {
-        return ResponseEntity.ok(postService.getFeed());
+    public ResponseEntity<List<PostDto>> getFeed(Authentication auth) {
+        User currentUser = null;
+        if (auth != null) {
+            currentUser = userService.findByEmail(auth.getName());
+        }
+        return ResponseEntity.ok(postService.getFeed(currentUser));
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<PostDto>> getUserPosts(@PathVariable Long userId) {
+    public ResponseEntity<List<PostDto>> getUserPosts(@PathVariable Long userId, Authentication auth) {
         if (!userService.existsById(userId)) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.NOT_FOUND,
                     "User not found");
         }
         User user = userService.findById(userId);
-        return ResponseEntity.ok(postService.getUserPosts(user));
+        User currentUser = null;
+        if (auth != null) {
+            currentUser = userService.findByEmail(auth.getName());
+        }
+        return ResponseEntity.ok(postService.getUserPosts(user, currentUser));
     }
 
     @GetMapping("/user/{userId}/media")
     public ResponseEntity<List<PostDto>> getMediaPosts(@PathVariable Long userId,
-            @RequestParam String type) {
+            @RequestParam String type, Authentication auth) {
         User user = userService.findById(userId);
-        return ResponseEntity.ok(postService.getUserMediaPosts(user, type));
+        User currentUser = null;
+        if (auth != null) {
+            currentUser = userService.findByEmail(auth.getName());
+        }
+        return ResponseEntity.ok(postService.getUserMediaPosts(user, type, currentUser));
+    }
+
+    @PostMapping("/{postId}/like")
+    public ResponseEntity<PostDto> toggleLike(@PathVariable Long postId, Authentication auth) {
+        User currentUser = userService.findByEmail(auth.getName());
+        return ResponseEntity.ok(postService.toggleLike(postId, currentUser));
+    }
+
+    @PostMapping("/{postId}/comments")
+    public ResponseEntity<com.touristconnect.dto.CommentDto> addComment(
+            @PathVariable Long postId,
+            @RequestBody String content,
+            Authentication auth) {
+        User currentUser = userService.findByEmail(auth.getName());
+        return ResponseEntity.ok(postService.addComment(postId, currentUser, content));
+    }
+
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<?> deletePost(@PathVariable Long postId, Authentication auth) {
+        try {
+            User currentUser = userService.findByEmail(auth.getName());
+            postService.deletePost(postId, currentUser);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
     }
 
     @GetMapping("/users/{userId}/posts")
-    public ResponseEntity<List<PostDto>> getPostsByUserId(@PathVariable Long userId) {
-        return getUserPosts(userId);
+    public ResponseEntity<List<PostDto>> getPostsByUserId(@PathVariable Long userId, Authentication auth) {
+        return getUserPosts(userId, auth);
     }
 }

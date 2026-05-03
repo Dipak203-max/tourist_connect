@@ -12,10 +12,15 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    private final String uploadDir = "uploads/posts/";
+    private final String baseUploadDir = "uploads";
 
-    public String saveFile(MultipartFile file) throws IOException {
-        Path uploadPath = Paths.get(uploadDir);
+    public String saveFile(MultipartFile file, String subDir) throws IOException {
+        Path uploadPath = Paths.get(baseUploadDir, subDir);
+
+        // If 'uploads' exists in parent but not locally, use parent
+        if (!Files.exists(uploadPath) && Files.exists(Paths.get("..", baseUploadDir))) {
+            uploadPath = Paths.get("..", baseUploadDir, subDir);
+        }
 
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
@@ -31,6 +36,10 @@ public class FileStorageService {
         Files.copy(file.getInputStream(), filePath);
 
         // Return relative path for static resource mapping
-        return "/uploads/posts/" + fileName;
+        return "/uploads/" + subDir + "/" + fileName;
+    }
+
+    public String saveFile(MultipartFile file) throws IOException {
+        return saveFile(file, "posts");
     }
 }

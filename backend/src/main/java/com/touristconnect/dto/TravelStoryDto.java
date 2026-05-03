@@ -15,12 +15,13 @@ public class TravelStoryDto {
     private String location;
     private int likes;
     private LocalDateTime createdAt;
+    private String profilePictureUrl;
 
     public TravelStoryDto() {
     }
 
     public TravelStoryDto(Long id, Long userId, String authorName, String title, String content, List<String> mediaUrls,
-            Visibility visibility, String location, int likes, LocalDateTime createdAt) {
+            Visibility visibility, String location, int likes, LocalDateTime createdAt, String profilePictureUrl) {
         this.id = id;
         this.userId = userId;
         this.authorName = authorName;
@@ -31,6 +32,7 @@ public class TravelStoryDto {
         this.location = location;
         this.likes = likes;
         this.createdAt = createdAt;
+        this.profilePictureUrl = profilePictureUrl;
     }
 
     public Long getId() {
@@ -111,5 +113,13 @@ public class TravelStoryDto {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getProfilePictureUrl() {
+        return profilePictureUrl;
+    }
+
+    public void setProfilePictureUrl(String profilePictureUrl) {
+        this.profilePictureUrl = profilePictureUrl;
     }
 }

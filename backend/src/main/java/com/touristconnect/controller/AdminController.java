@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collections;
 import java.util.List;
@@ -72,13 +73,30 @@ public class AdminController {
 
     @PostMapping("/guides/{id}/verify")
     @org.springframework.transaction.annotation.Transactional
-    public ResponseEntity<String> verifyGuide(@PathVariable Long id) {
+    public ResponseEntity<String> verifyGuide(
+            @PathVariable Long id,
+            @RequestParam(value = "certificate", required = false) MultipartFile certificate) {
         Objects.requireNonNull(id, "Guide ID must not be null");
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!user.getRole().name().equals("GUIDE")) {
             return ResponseEntity.badRequest().body("User is not a guide.");
+        }
+
+        if (certificate != null && !certificate.isEmpty()) {
+            try {
+                String fileName = java.util.UUID.randomUUID() + "_" + certificate.getOriginalFilename();
+                java.nio.file.Path uploadPath = java.nio.file.Paths.get("uploads/");
+                if (!java.nio.file.Files.exists(uploadPath)) {
+                    java.nio.file.Files.createDirectories(uploadPath);
+                }
+                java.nio.file.Path filePath = uploadPath.resolve(fileName);
+                java.nio.file.Files.copy(certificate.getInputStream(), filePath);
+                user.setVerificationCertificateUrl("uploads/" + fileName);
+            } catch (java.io.IOException e) {
+                log.error("Failed to save certificate: {}", e.getMessage());
+            }
         }
 
         user.setVerificationStatus(VerificationStatus.VERIFIED);
@@ -115,7 +133,7 @@ public class AdminController {
         adminDashboardService.logActivity(
                 com.touristconnect.entity.AdminActivityType.GUIDE_VERIFIED,
                 "Guide verified: " + user.getFullName(),
-                user, // The guide user
+                user, 
                 user.getId().toString());
 
         return ResponseEntity.ok("Guide verified successfully.");
@@ -123,7 +141,7 @@ public class AdminController {
 
     @PostMapping("/guides/{id}/reject")
     @org.springframework.transaction.annotation.Transactional
-    public ResponseEntity<String> rejectGuide(@PathVariable Long id) {
+    public ResponseEntity<String> rejectGuide(@PathVariable Long id, @RequestParam(required = false) String reason) {
         Objects.requireNonNull(id, "Guide ID must not be null");
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -134,6 +152,7 @@ public class AdminController {
 
         user.setVerificationStatus(VerificationStatus.REJECTED);
         user.setVerifiedGuide(false);
+        user.setRejectionReason(reason);
         userRepository.save(user);
 
         // Notify Guide
@@ -151,7 +170,7 @@ public class AdminController {
         adminDashboardService.logActivity(
                 com.touristconnect.entity.AdminActivityType.GUIDE_REJECTED,
                 "Guide rejected: " + user.getFullName(),
-                user, // The guide user
+                user, 
                 user.getId().toString());
 
         return ResponseEntity.ok("Guide verification rejected.");
@@ -261,7 +280,10 @@ public class AdminController {
                 profile != null ? profile.getExperienceYears() : 0,
                 profile != null ? profile.getLanguages() : Collections.emptyList(),
                 status,
-                user.getCreatedAt());
+                user.getCreatedAt(),
+                user.getLicenseDocumentUrl(),
+                user.getIdentityDocumentUrl(),
+                user.getRejectionReason());
     }
 
     private AdminUserDto convertToAdminUserDto(User user) {
@@ -274,5 +296,14 @@ public class AdminController {
                 user.getVerificationStatus(),
                 user.getCreatedAt(),
                 user.isVerifiedGuide());
+    }
+
+    @GetMapping("/dashboard/download")
+    public org.springframework.http.ResponseEntity<byte[]> downloadDashboardSummary() {
+        byte[] pdf = adminDashboardService.generateDashboardSummaryPdf();
+        return org.springframework.http.ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=dashboard_summary.pdf")
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 }

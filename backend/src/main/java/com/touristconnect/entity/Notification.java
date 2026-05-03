@@ -34,6 +34,9 @@ public class Notification {
     @Column(name = "redirect_url")
     private String redirectUrl;
 
+    @Column(name = "group_id")
+    private Long groupId;
+
     public Notification() {
         this.createdAt = LocalDateTime.now();
     }
@@ -113,5 +116,13 @@ public class Notification {
 
     public void setRedirectUrl(String redirectUrl) {
         this.redirectUrl = redirectUrl;
+    }
+
+    public Long getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(Long groupId) {
+        this.groupId = groupId;
     }
 }

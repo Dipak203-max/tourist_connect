@@ -31,4 +31,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
         @org.springframework.data.jpa.repository.Query("SELECT COUNT(b) FROM Booking b WHERE b.createdAt BETWEEN :start AND :end")
         long countByCreatedAtBetween(@org.springframework.data.repository.query.Param("start") java.time.LocalDateTime start, @org.springframework.data.repository.query.Param("end") java.time.LocalDateTime end);
+
+        org.springframework.data.domain.Page<Booking> findByStatus(com.touristconnect.entity.BookingStatus status, org.springframework.data.domain.Pageable pageable);
 }

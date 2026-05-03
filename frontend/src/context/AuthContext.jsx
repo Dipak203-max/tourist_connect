@@ -1,6 +1,7 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import * as authApi from '../api/authApi';
+import axiosInstance from '../api/axiosInstance';
 
 const AuthContext = createContext();
 
@@ -77,13 +78,20 @@ export const AuthProvider = ({ children }) => {
         });
     };
 
-    const logout = () => {
+    const logout = async () => {
+        if (user && user.role === 'GUIDE') {
+            try {
+                await axiosInstance.post('/guide-profile/offline');
+            } catch (e) {
+                console.error("Failed to set offline status", e);
+            }
+        }
         localStorage.removeItem('token');
         setUser(null);
     };
 
-    const value = {
-        user: user ? { ...user, id: user.userId } : null,
+    const value = React.useMemo(() => ({
+        user: user ? { ...user, id: user.id || user.userId } : null,
         loading,
         login,
         register,
@@ -95,7 +103,7 @@ export const AuthProvider = ({ children }) => {
         forgotPassword,
         resetPassword,
         updateUser
-    };
+    }), [user, loading]);
 
     return (
         <AuthContext.Provider value={value}>

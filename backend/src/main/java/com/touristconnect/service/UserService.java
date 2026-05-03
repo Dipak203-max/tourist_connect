@@ -30,11 +30,12 @@ public class UserService {
         return userRepository.existsById(id);
     }
 
-    @Autowired
-    private FriendRequestRepository friendRequestRepository;
 
     @Autowired
     private com.touristconnect.repository.GuideProfileRepository guideProfileRepository;
+
+    @Autowired
+    private com.touristconnect.repository.UserProfileRepository userProfileRepository;
 
     @Transactional
     public User saveUser(User user) {
@@ -68,29 +69,57 @@ public class UserService {
         return users.stream()
                 .filter(u -> !u.getId().equals(currentUser.getId()))
                 .filter(u -> u.getRole() != Role.ADMIN)
-                .filter(u -> !friendRequestRepository.areFriends(currentUser, u))
-
-                .filter(u -> !friendRequestRepository.existsBySenderAndReceiver(currentUser, u))
-                .filter(u -> !friendRequestRepository.existsBySenderAndReceiver(u, currentUser))
-                .map(u -> new UserDto(u.getId(), u.getEmail(), u.getRole()))
+                .map(u -> {
+                    String profilePictureUrl = userProfileRepository.findByUserId(u.getId())
+                            .map(com.touristconnect.entity.UserProfile::getProfilePictureUrl)
+                            .orElse(null);
+                    return new UserDto(u.getId(), u.getFullName(), u.getUsername(), u.getEmail(), u.getRole(), profilePictureUrl);
+                })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void updateProfilePicture(String email, String profilePictureUrl) {
+        User user = findByEmail(email);
+        com.touristconnect.entity.UserProfile profile = userProfileRepository.findByUser(user)
+                .orElseGet(() -> {
+                    com.touristconnect.entity.UserProfile up = new com.touristconnect.entity.UserProfile();
+                    up.setUser(user);
+                    return up;
+                });
+        profile.setProfilePictureUrl(profilePictureUrl);
+        userProfileRepository.save(profile);
     }
 
     // Simple DTO for search results
     public static class UserDto {
         private Long id;
+        private String fullName;
+        private String username;
         private String email;
         private Role role;
+        private String profilePictureUrl;
 
-        public UserDto(Long id, String email, Role role) {
+        public UserDto(Long id, String fullName, String username, String email, Role role, String profilePictureUrl) {
             this.id = id;
+            this.fullName = fullName;
+            this.username = username;
             this.email = email;
             this.role = role;
+            this.profilePictureUrl = profilePictureUrl;
         }
 
         // Getters
         public Long getId() {
             return id;
+        }
+
+        public String getFullName() {
+            return fullName;
+        }
+
+        public String getUsername() {
+            return username;
         }
 
         public String getEmail() {
@@ -99,6 +128,10 @@ public class UserService {
 
         public Role getRole() {
             return role;
+        }
+
+        public String getProfilePictureUrl() {
+            return profilePictureUrl;
         }
     }
 }

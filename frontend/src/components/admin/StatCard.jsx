@@ -15,7 +15,7 @@ const StatCard = ({ title, value, icon, color, trend, growth, prefix = '', suffi
     const countUpInstance = useRef(null);
     const isPositive = growth >= 0;
 
-    // Extract numeric value from string if needed (e.g., "NPR 5000" -> 5000)
+    // Extract numeric value from string if needed 
     const numericValue = typeof value === 'string' 
         ? parseFloat(value.replace(/[^0-9.]/g, '')) 
         : value;

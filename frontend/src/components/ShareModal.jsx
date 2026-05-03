@@ -39,12 +39,21 @@ const ShareModal = ({ isOpen, onClose, itinerary }) => {
 
     const getFriendId = (friendDto) => {
         if (!user || !friendDto) return null;
-        return friendDto.senderId === user.userId ? friendDto.receiverId : friendDto.senderId;
+        // Handle UserDto (id) or FriendRequestDto (senderId/receiverId)
+        if (friendDto.id) return friendDto.id;
+        const myId = String(user.id);
+        const sId = String(friendDto.senderId);
+        return sId === myId ? friendDto.receiverId : friendDto.senderId;
     };
 
     const getFriendName = (friendDto) => {
         if (!user || !friendDto) return "Unknown";
-        return friendDto.senderId === user.userId ? friendDto.receiverName : friendDto.senderName;
+        // Handle UserDto (fullName) or FriendRequestDto (senderName/receiverName)
+        if (friendDto.fullName) return friendDto.fullName;
+        const myId = String(user.id);
+        const sId = String(friendDto.senderId);
+        const name = sId === myId ? friendDto.receiverName : friendDto.senderName;
+        return name || "Unknown";
     };
 
     const handleShare = (target, type) => {
@@ -61,7 +70,7 @@ const ShareModal = ({ isOpen, onClose, itinerary }) => {
         let targetId;
         let destination;
         let messagePayload = {
-            senderId: user.userId, 
+            senderId: user.id, 
             content: payloadContent,
             messageType: 'ITINERARY'
         };
@@ -72,7 +81,7 @@ const ShareModal = ({ isOpen, onClose, itinerary }) => {
             messagePayload.receiverId = targetId;
         } else {
             targetId = target.id;
-            destination = `/app/chat.group.send/${targetId}`; 
+            destination = `/app/chat/group/${targetId}`; 
             messagePayload.group = { id: targetId };  
             
         }
@@ -138,7 +147,7 @@ const ShareModal = ({ isOpen, onClose, itinerary }) => {
                                             <div key={idx} className="flex items-center justify-between p-3 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 transition">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                                                        {getFriendName(friend).charAt(0)}
+                                                        {(getFriendName(friend) || "U").charAt(0)}
                                                     </div>
                                                     <div className="font-medium text-gray-700">{getFriendName(friend)}</div>
                                                 </div>
@@ -171,7 +180,7 @@ const ShareModal = ({ isOpen, onClose, itinerary }) => {
                                             <div key={group.id} className="flex items-center justify-between p-3 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700 transition">
                                                 <div className="flex items-center space-x-3">
                                                     <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold">
-                                                        {group.name.charAt(0)}
+                                                        {(group.name || "G").charAt(0)}
                                                     </div>
                                                     <div className="font-medium text-gray-700">{group.name}</div>
                                                 </div>

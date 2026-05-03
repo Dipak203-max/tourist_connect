@@ -37,9 +37,10 @@ public class ReportController {
     public ResponseEntity<?> downloadReport(
             @RequestParam String type,
             @RequestParam int year,
-            @RequestParam(required = false) Integer month) {
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer day) {
 
-        byte[] pdf = reportService.generateReportPdf(type, year, month);
+        byte[] pdf = reportService.generateReportPdf(type, year, month, day);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=report.pdf")

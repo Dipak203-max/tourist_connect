@@ -30,9 +30,9 @@ this.socketUrl = this.baseUrl.replace('/api', '') + '/ws-chat';
         this.debug = false; 
     }
 
-    /**
-     * Subscribe to connection status changes
-     */
+    
+      //Subscribe to connection status changes
+     
     addStatusListener(listener) {
         this.statusListeners.add(listener);
         listener(this.status);
@@ -46,9 +46,9 @@ this.socketUrl = this.baseUrl.replace('/api', '') + '/ws-chat';
         this.statusListeners.forEach(listener => listener(newStatus));
     }
 
-    /**
-     * Initializes connection
-     */
+    
+     // Initializes connection
+     
     async connect() {
         if (this.status === 'CONNECTED') return Promise.resolve(this.stompClient);
         if (this.status === 'CONNECTING') return this.connectionPromise;
@@ -141,7 +141,8 @@ this.socketUrl = this.baseUrl.replace('/api', '') + '/ws-chat';
             }
             
             // Map STOMP topics to logical event types
-            const eventType = (payload && payload.type) || this._inferEventType(topic, payload);
+            const logicalType = this._inferEventType(topic, payload);
+            const eventType = logicalType !== 'UNKNOWN_EVENT' ? logicalType : (payload && payload.type);
             
             const event = {
                 type: eventType,

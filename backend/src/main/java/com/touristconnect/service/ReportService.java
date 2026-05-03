@@ -55,12 +55,18 @@ public class ReportService {
                 getInvoices(start, end));
     }
 
-    public byte[] generateReportPdf(String type, int year, Integer month) {
+    public byte[] generateReportPdf(String type, int year, Integer month, Integer day) {
         ReportDTO.FinancialSummaryDTO summary;
         List<ReportDTO.InvoiceSummaryDTO> invoices;
         String title;
 
-        if ("monthly".equalsIgnoreCase(type)) {
+        if ("daily".equalsIgnoreCase(type) && day != null && month != null) {
+            LocalDate date = LocalDate.of(year, month, day);
+            ReportDTO.DailyReportDTO daily = getDailyReport(date.toString());
+            summary = daily.getSummary();
+            invoices = daily.getInvoices();
+            title = "Daily Report - " + date.toString();
+        } else if ("monthly".equalsIgnoreCase(type) && month != null) {
             ReportDTO.MonthlyReportDTO monthly = getMonthlyReport(year, month);
             summary = monthly.getSummary();
             invoices = monthly.getInvoices();
@@ -71,9 +77,6 @@ public class ReportService {
             invoices = yearly.getInvoices();
             title = "Yearly Report - " + year;
         } else {
-            // Default or handle Daily/Range if needed, but user's code for Controller
-            // only passes year/month for now.
-            // I'll add a safe fallback.
             summary = new ReportDTO.FinancialSummaryDTO(0L, 0.0, 0.0, 0.0);
             invoices = java.util.Collections.emptyList();
             title = "Report";
@@ -83,12 +86,12 @@ public class ReportService {
     }
 
     private ReportDTO.FinancialSummaryDTO getSummary(LocalDate start, LocalDate end) {
-        ReportDTO.FinancialSummaryDTO summary = reportRepository.getFinancialSummary(PaymentStatus.SUCCESS, start, end);
+        ReportDTO.FinancialSummaryDTO summary = reportRepository.getFinancialSummary(PaymentStatus.SUCCESS, 
+                start.atStartOfDay(), end.atTime(23, 59, 59, 999999999));
         if (summary == null || summary.getTotalInvoices() == 0) {
             return new ReportDTO.FinancialSummaryDTO(0L, 0.0, 0.0, 0.0);
         }
-        // Handle potential nulls from SUM if there are no records (though COUNT(p)
-        // should be 0)
+        // Handle potential nulls from SUM if there are no records 
         if (summary.getTotalRevenue() == null)
             summary.setTotalRevenue(0.0);
         if (summary.getTotalCommission() == null)
@@ -99,7 +102,8 @@ public class ReportService {
     }
 
     private List<ReportDTO.InvoiceSummaryDTO> getInvoices(LocalDate start, LocalDate end) {
-        return reportRepository.getInvoiceSummaries(PaymentStatus.SUCCESS, start, end);
+        return reportRepository.getInvoiceSummaries(PaymentStatus.SUCCESS, 
+                start.atStartOfDay(), end.atTime(23, 59, 59, 999999999));
     }
 
     public byte[] generateReportPdf(String type, String title, ReportDTO.FinancialSummaryDTO summary,

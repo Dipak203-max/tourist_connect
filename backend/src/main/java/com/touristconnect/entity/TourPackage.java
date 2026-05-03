@@ -27,15 +27,31 @@ public class TourPackage {
     @Column(nullable = false)
     private Double pricePerPerson;
 
-    private String duration; // e.g., "12 Days", "3 Hours"
+    private String duration; 
 
     private Double rating;
 
     private String imageUrl;
 
-    private String category; // e.g., "Adventure", "Culture", "Popular"
+    private String category; 
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guide_profile_id", nullable = false)
     private GuideProfile guideProfile;
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
 }

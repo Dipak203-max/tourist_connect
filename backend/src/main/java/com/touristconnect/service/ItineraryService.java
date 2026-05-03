@@ -55,7 +55,7 @@ public class ItineraryService {
     public List<ItineraryDto> getMyItineraries(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return itineraryRepository.findByUserOrderByStartDateDesc(user).stream()
+        return itineraryRepository.findByUserOrderByIdDesc(user).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
@@ -123,48 +123,6 @@ public class ItineraryService {
 
     @Transactional
     public ItineraryDto addItem(Long dayId, ItineraryDto.ItineraryItemDto itemDto, String email) {
-        // We need to find the day and verify ownership of the itinerary
-        // Since we don't have a direct repository method exposed here easily for
-        // day->itinerary->user check
-        // without autowiring DayRepository (which we can assume exists or traverse),
-        // we'll rely on traversing from itinerary if needed, but standard JPA would be
-        // to fetch Day.
-        // Assuming cascade or we delve into itinerary.
-
-        // Actually, better approach: verify via Itinerary. But we only have dayId.
-        // Let's assume we can fetch day. For now, to catch errors, I'll filter
-        // itineraries of user.
-        // BUT efficient way:
-
-        // Let's iterate user's itineraries to find the day? No, too slow.
-        // Correct: Fetch ItineraryDay by ID, check itinerary.user.email.
-        // I need to use EntityManager or a repository.
-        // Let's effectively use the Itinerary reference.
-
-        // LIMITATION: I don't see ItineraryDayRepository injected.
-        // I will assume I can't easily fetch Day directly without it.
-        // Plan B: I will iterate all itineraries of the user to find the one containing
-        // the day.
-        // OR better: Just inject ItineraryDayRepository? No, let's keep it simple.
-        // I will fetch the itinerary by ID passed in?
-        // Wait, the controller endpoint I planned is `POST /days/{dayId}/items`.
-        // I should probably change the endpoint to `POST
-        // /itineraries/{id}/days/{dayId}/items` to be safe/RESTful
-        // OR just fetch day.
-
-        // PROPOSAL: I will change the controller to accept Itinerary ID too, or I will
-        // use a query.
-        // Let's try to pass Itinerary ID to this method to be safe and efficient if the
-        // controller provides it.
-        // CHECK Controller: I planned `POST /days/{dayId}/items`.
-
-        // Let's stick to basics: checking ownership is critical.
-        // I'll assume I have to scan or use a repository.
-        // Let's fetch the specific itinerary the day belongs to.
-        // Since I can't safely change the repository right now without seeing it,
-        // I will update the Controller to include Itinerary ID in the path: `POST
-        // /itineraries/{id}/days/{dayId}/items`.
-        // This makes `addItem` signature: addItem(Long itineraryId, Long dayId, ...)
 
         throw new RuntimeException("Method signature mismatch - see correction");
     }
@@ -309,10 +267,6 @@ public class ItineraryService {
                 })
                 .collect(Collectors.toList());
 
-        // Update to include shareToken in DTO if I had updated DTO.
-        // Wait, I need to update DTO first?
-        // The DTO has isShared. I should add shareToken to DTO too?
-        // Yes, frontend needs it.
 
         return new ItineraryDto(
                 itinerary.getId(),
@@ -320,7 +274,7 @@ public class ItineraryService {
                 itinerary.getStartDate(),
                 itinerary.getEndDate(),
                 itinerary.isShared(),
-                itinerary.getShareToken(), // Pass shareToken
+                itinerary.getShareToken(), 
                 dayDtos);
     }
 }

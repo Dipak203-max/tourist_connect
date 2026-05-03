@@ -47,7 +47,7 @@ public class ChatService {
                 User receiver = userRepository.findById(receiverId)
                                 .orElseThrow(() -> new RuntimeException("Receiver not found"));
 
-                // Get or create conversation entity (Identifier is symmetric: min_max)
+                // Get or create conversation entity 
                 String identifier = Math.min(sender.getId(), receiver.getId()) + "_"
                                 + Math.max(sender.getId(), receiver.getId());
                 Conversation conversation = conversationRepository.findByConversationIdentifier(identifier)
@@ -102,7 +102,7 @@ public class ChatService {
 
                 
 
-                if (!group.getMembers().contains(sender)) {
+                if (group.getMembers().stream().noneMatch(m -> m.getId().equals(sender.getId()))) {
                         throw new RuntimeException("User is not a member of this group");
                 }
 
@@ -125,7 +125,8 @@ public class ChatService {
                                                 notificationMessage,
                                                 NotificationType.MESSAGE,
                                                 saved.getId(),
-                                                "/chat");
+                                                "/chat",
+                                                group.getId());
                         }
                 }
 
@@ -158,7 +159,7 @@ public class ChatService {
                 ChatGroup group = chatGroupRepository.findById(groupId)
                                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
-                if (!group.getMembers().contains(user)) {
+                if (group.getMembers().stream().noneMatch(m -> m.getId().equals(user.getId()))) {
                         throw new RuntimeException("Access Denied: You are not a member of this group");
                 }
 
@@ -227,7 +228,6 @@ public class ChatService {
 
                 return conversations.stream().map(c -> {
                         // Correctly identify the "other user" regardless of who started the
-                        // conversation
                         User otherUser = c.getSender().getId().equals(user.getId()) ? c.getReceiver() : c.getSender();
                         UserProfile otherUserProfile = userProfileRepository.findByUserId(otherUser.getId())
                                         .orElse(null);
@@ -267,8 +267,16 @@ public class ChatService {
                 return identifier;
         }
 
-        public ChatGroup getGroupById(Long groupId) {
-                return chatGroupRepository.findById(groupId)
+    @Transactional(readOnly = true)
+    public ChatGroup getGroupWithMembers(Long groupId) {
+        ChatGroup group = chatGroupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Group not found"));
-        }
+        group.getMembers().size(); 
+        return group;
+    }
+
+    public ChatGroup getGroupById(Long groupId) {
+        return chatGroupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+    }
 }

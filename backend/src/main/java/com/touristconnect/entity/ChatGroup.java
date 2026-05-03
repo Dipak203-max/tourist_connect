@@ -2,7 +2,9 @@ package com.touristconnect.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -24,6 +26,9 @@ public class ChatGroup {
     @JoinTable(name = "chat_group_members", joinColumns = @JoinColumn(name = "group_id"), inverseJoinColumns = @JoinColumn(name = "user_id"))
     private Set<User> members = new HashSet<>();
 
+    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChatMessage> messages = new ArrayList<>();
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -35,7 +40,7 @@ public class ChatGroup {
         this.name = name;
         this.createdBy = createdBy;
         this.createdAt = LocalDateTime.now();
-        this.members.add(createdBy); // Creator is automatically a member
+        this.members.add(createdBy); 
     }
 
     public Long getId() {

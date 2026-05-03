@@ -78,11 +78,7 @@ const GuideAbout = ({ bio, certifications, languages }) => {
                   </span>
                 ))
               ) : (
-                <>
-                  <span className="px-3 py-1 bg-white dark:bg-surface-900 rounded-lg text-xs font-black uppercase border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400">English</span>
-                  <span className="px-3 py-1 bg-white dark:bg-surface-900 rounded-lg text-xs font-black uppercase border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400">Nepali</span>
-                  <span className="px-3 py-1 bg-white dark:bg-surface-900 rounded-lg text-xs font-black uppercase border border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400">Hindi</span>
-                </>
+                <span className="text-surface-400 text-xs italic font-bold">Languages not listed.</span>
               )}
             </div>
           </div>

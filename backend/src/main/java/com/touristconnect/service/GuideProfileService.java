@@ -52,14 +52,20 @@ public class GuideProfileService {
             profile.setUser(user);
         }
 
-        if (profileDto.getPrice() == null || profileDto.getPrice() <= 0) {
-            throw new RuntimeException("Guide must set a valid price per day");
+        // Only enforce price if it's a new profile or if price is being explicitly updated
+        if (profileDto.getPrice() != null) {
+            if (profileDto.getPrice() < 0) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Price cannot be negative");
+            }
+            profile.setPrice(profileDto.getPrice());
+        } else if (profile.getPrice() == null) {
+            profile.setPrice(0.0); 
         }
 
         profile.setSpecialization(profileDto.getSpecialization());
         profile.setExperienceYears(profileDto.getExperienceYears());
         profile.setLanguages(profileDto.getLanguages());
-        profile.setPrice(profileDto.getPrice());
         profile.setLatitude(profileDto.getLatitude());
         profile.setLongitude(profileDto.getLongitude());
         profile.setCity(profileDto.getCity());
@@ -79,6 +85,18 @@ public class GuideProfileService {
             userRepository.save(user);
         }
 
+        // Sync Profile Picture with UserProfile entity
+        UserProfile userProfile = userProfileRepository.findByUser(user)
+                .orElseGet(() -> {
+                    UserProfile up = new UserProfile();
+                    up.setUser(user);
+                    return up;
+                });
+        if (profileDto.getProfilePictureUrl() != null && !profileDto.getProfilePictureUrl().isEmpty()) {
+            userProfile.setProfilePictureUrl(profileDto.getProfilePictureUrl());
+            userProfileRepository.save(userProfile);
+        }
+
         GuideProfile savedProfile = guideProfileRepository.save(profile);
 
         return mapToDto(savedProfile);
@@ -95,7 +113,7 @@ public class GuideProfileService {
             return new GuideProfileDto(null, user.getId(), user.getFullName(), "", 0, java.util.Collections.emptyList(),
                     0.0, 0, null, null, "", "", 0.0, true, "", null, 
                     java.util.Collections.emptyList(), java.util.Collections.emptyList(), "", "Within 1 hour", 
-                    user.getPhoneNumber(), user.getEmail(), "VERIFIED".equals(verificationStatus));
+                    user.getPhoneNumber(), user.getEmail(), "VERIFIED".equals(verificationStatus), verificationStatus);
         }
 
         return mapToDto(profile);
@@ -110,38 +128,69 @@ public class GuideProfileService {
     }
 
     @Transactional(readOnly = true)
-    public DetailedGuideProfileDto getDetailedProfile(Long userId) {
-        GuideProfile profile = guideProfileRepository.findByUserId(userId)
+    public DetailedGuideProfileDto getDetailedProfileByEmail(String email) {
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-                        org.springframework.http.HttpStatus.NOT_FOUND, "Guide profile not found."));
+                        org.springframework.http.HttpStatus.NOT_FOUND, "User not found."));
+        return getDetailedProfile(user.getId());
+    }
 
-        GuideProfileDto guideDto = mapToDto(profile);
+    @Transactional(readOnly = true)
+    public DetailedGuideProfileDto getDetailedProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND, "User not found."));
 
-        // Fetch Tours
-        List<TourPackage> tours = tourPackageRepository.findByGuideProfileId(profile.getId());
-        List<TourPackageDto> tourDtos = tours.stream()
-                .map(this::mapToTourDto)
-                .collect(Collectors.toList());
+        GuideProfile profile = guideProfileRepository.findByUserId(userId).orElse(null);
 
-        // Fetch Reviews
-        List<Review> reviews = reviewRepository.findByGuide(profile.getUser());
+        GuideProfileDto guideDto;
+        if (profile == null) {
+            if (!"GUIDE".equals(user.getRole().name())) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST, "User is not a guide.");
+            }
+            String verificationStatus = user.getVerificationStatus() != null ? user.getVerificationStatus().name() : "PENDING";
+            guideDto = new GuideProfileDto(null, user.getId(), user.getFullName(), "New Guide", 0, java.util.Collections.emptyList(),
+                    0.0, 0, null, null, "", "", 0.0, true, "This guide hasn't provided a bio yet. They are likely busy preparing for their next adventure!", null, 
+                    java.util.Collections.emptyList(), java.util.Collections.emptyList(), "", "Within 1 hour", 
+                    user.getPhoneNumber(), user.getEmail(), "VERIFIED".equals(verificationStatus), verificationStatus);
+        } else {
+            guideDto = mapToDto(profile);
+        }
+
+        // Fetch Reviews first to get counts (Ordered by latest first)
+        List<Review> reviews = reviewRepository.findByGuideOrderByCreatedAtDesc(user);
         List<ReviewDto> reviewDtos = reviews.stream()
                 .map(this::mapToReviewDto)
                 .collect(Collectors.toList());
 
+        Double averageRating = reviewRepository.getAverageRating(userId);
+        int totalReviewsCount = reviews.size();
+
+        // Update guideDto with accurate stats
+        guideDto.setRating(averageRating != null ? averageRating : 0.0);
+        guideDto.setReviewCount(totalReviewsCount);
+        List<TourPackageDto> tourDtos = java.util.Collections.emptyList();
+        if (profile != null) {
+            List<TourPackage> tours = tourPackageRepository.findByGuideProfileId(profile.getId());
+            tourDtos = tours.stream()
+                    .map(this::mapToTourDto)
+                    .collect(Collectors.toList());
+        }
+
         // Calculate Stats
         Map<String, Object> stats = new HashMap<>();
-        stats.put("rating", profile.getRating());
-        stats.put("totalReviews", (long) profile.getReviewCount());
+        stats.put("rating", averageRating != null ? averageRating : 0.0);
+        stats.put("totalReviews", (long) totalReviewsCount);
         stats.put("totalTours", (long) tourDtos.size());
-        stats.put("completedBookings", (long) profile.getReviewCount()); // Using review count as a proxy for completed bookings if not explicitly tracked
+        stats.put("completedBookings", (long) totalReviewsCount); 
 
         return DetailedGuideProfileDto.builder()
                 .guide(guideDto)
                 .stats(stats)
                 .tours(tourDtos)
                 .reviews(reviewDtos)
-                .commissionPercent(10.0) // Standard 10% commission
+                .commissionPercent(10.0)
                 .build();
     }
 
@@ -207,7 +256,7 @@ public class GuideProfileService {
     }
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        final int R = 6371; // Radius of the earth in km
+        final int R = 6371; 
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
@@ -245,7 +294,8 @@ public class GuideProfileService {
                 profile.getResponseTime(),
                 profile.getUser().getPhoneNumber(),
                 profile.getUser().getEmail(),
-                profile.isVerified() || (profile.getUser().getVerificationStatus() != null && "VERIFIED".equals(profile.getUser().getVerificationStatus().name())));
+                profile.isVerified() || (profile.getUser().getVerificationStatus() != null && "VERIFIED".equals(profile.getUser().getVerificationStatus().name())),
+                profile.getUser().getVerificationStatus() != null ? profile.getUser().getVerificationStatus().name() : null);
     }
 
     private TourPackageDto mapToTourDto(TourPackage tour) {
@@ -276,5 +326,16 @@ public class GuideProfileService {
                 review.getComment(),
                 review.getCreatedAt()
         );
+    }
+
+    @Transactional
+    public void updateAvailability(String email, boolean available) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        guideProfileRepository.findByUser(user).ifPresent(profile -> {
+            profile.setAvailable(available);
+            guideProfileRepository.save(profile);
+            log.info("Updated availability for guide {}: {}", email, available);
+        });
     }
 }

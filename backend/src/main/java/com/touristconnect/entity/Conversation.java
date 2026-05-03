@@ -23,7 +23,7 @@ public class Conversation {
     private LocalDateTime lastMessageTime;
 
     @Column(name = "conversation_identifier", unique = true)
-    private String conversationIdentifier; // e.g., "minId_maxId"
+    private String conversationIdentifier; 
 
     @Column(nullable = false)
     private Boolean isGroup = false;

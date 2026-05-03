@@ -40,13 +40,17 @@ const ProfileFeed = ({ userId, showPostBox }) => {
         }
     };
 
+    const handlePostDeleted = (postId) => {
+        setPosts(prev => prev.filter(p => p.id !== postId));
+    };
+
     return (
         <div className="space-y-6">
             {showPostBox && <CreatePost onPostCreated={handlePostCreated} />}
 
             {posts.length > 0 ? (
                 posts.map(post => (
-                    <PostCard key={post.id} post={post} />
+                    <PostCard key={post.id} post={post} onPostDeleted={handlePostDeleted} />
                 ))
             ) : (
                 <div className="bg-surface-50 dark:bg-surface-900 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-700 p-12 text-center animate-in fade-in zoom-in duration-500">

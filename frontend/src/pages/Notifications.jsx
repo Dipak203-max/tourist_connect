@@ -11,7 +11,8 @@ import {
     Check, 
     X, 
     Clock,
-    MoreHorizontal
+    MoreHorizontal,
+    Users
 } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { getNotifications } from '../api/notificationApi';
@@ -19,9 +20,13 @@ import { acceptFriendRequest, rejectFriendRequest } from '../api/friendApi';
 import { toast } from 'react-hot-toast';
 import { format, isToday, isYesterday, parseISO } from 'date-fns';
 import { Button, Card, Badge } from '../components/ui/BaseComponents';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Notifications = () => {
+    const { user } = useAuth();
     const { notifications: liveNotifications, markNotificationAsRead } = useChat();
+    const navigate = useNavigate();
     const [allNotifications, setAllNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -32,11 +37,30 @@ const Notifications = () => {
     useEffect(() => {
         if (liveNotifications.length > 0) {
             setAllNotifications(prev => {
+                // Create a map of live updates for quick lookup
+                const liveUpdates = new Map(liveNotifications.map(n => [n.id, n]));
+                
+                // 1. Update existing notifications with fresh data (like isRead status)
+                let updated = prev.map(existing => {
+                    if (liveUpdates.has(existing.id)) {
+                        return liveUpdates.get(existing.id);
+                    }
+                    return existing;
+                });
+
+                // 2. Add brand new ones that aren't in state yet
                 const existingIds = new Set(prev.map(n => n.id));
-                const newOnes = liveNotifications.filter(ln => !existingIds.has(ln.id));
-                if (newOnes.length === 0) return prev;
-                const combined = [...newOnes, ...prev];
-                return combined.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                const newOnes = liveNotifications.filter(ln => 
+                    !existingIds.has(ln.id) && 
+                    ln.type !== 'MESSAGE'
+                );
+
+                if (newOnes.length === 0 && updated === prev) return prev;
+                
+                const combined = [...newOnes, ...updated];
+                // Ensure unique items and sort
+                const unique = Array.from(new Map(combined.map(n => [n.id, n])).values());
+                return unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             });
         }
     }, [liveNotifications]);
@@ -44,11 +68,64 @@ const Notifications = () => {
     const fetchNotifications = async () => {
         try {
             const data = await getNotifications();
-            setAllNotifications(data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+            // Only filter out chat messages from the general notifications list
+            const filtered = data.filter(n => n.type !== 'MESSAGE');
+            setAllNotifications(filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
         } catch (err) {
             console.error("Failed to fetch notifications", err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleNotificationClick = async (notif) => {
+        if (!notif.isRead) {
+            // Optimistic local update
+            setAllNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+            
+            try {
+                // Backend update
+                await markNotificationAsRead(notif.id);
+            } catch (err) {
+                console.error("Failed to mark as read:", err);
+            }
+        }
+
+        // Routing logic - simplified and more robust
+        if (notif.redirectUrl) {
+            navigate(notif.redirectUrl);
+        } else {
+            switch (notif.type) {
+                case 'FRIEND_REQUEST':
+                case 'FRIEND_ACCEPTED':
+                    navigate('/friends');
+                    break;
+                case 'MESSAGE':
+                    if (notif.groupId) {
+                        navigate('/groups');
+                    } else {
+                        navigate('/chat');
+                    }
+                    break;
+                case 'GROUP_UPDATE':
+                case 'GROUP_INVITE':
+                    navigate('/groups');
+                    break;
+                case 'BOOKING_REQUESTED':
+                case 'BOOKING_CONFIRMED':
+                case 'BOOKING_REJECTED':
+                case 'BOOKING_CANCELLED':
+                    // Redirect to role-based bookings list
+                    if (user?.role === 'GUIDE') {
+                        navigate('/guide/bookings');
+                    } else {
+                        navigate('/tourist/bookings');
+                    }
+                    break;
+                default:
+                    // Just stay on the page if no route
+                    break;
+            }
         }
     };
 
@@ -106,6 +183,11 @@ const Notifications = () => {
             case 'FRIEND_ACCEPTED': return <CheckCircle2 className="w-5 h-5 text-green-500" />;
             case 'MESSAGE': return <MessageSquare className="w-5 h-5 text-indigo-500" />;
             case 'GROUP_INVITE': return <Plane className="w-5 h-5 text-orange-500" />;
+            case 'GROUP_UPDATE': return <Users className="w-5 h-5 text-blue-600" />;
+            case 'BOOKING_REQUESTED': return <Clock className="w-5 h-5 text-amber-500" />;
+            case 'BOOKING_CONFIRMED': return <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
+            case 'BOOKING_REJECTED': 
+            case 'BOOKING_CANCELLED': return <X className="w-5 h-5 text-rose-500" />;
             case 'SYSTEM': return <Info className="w-5 h-5 text-gray-500" />;
             default: return <Bell className="w-5 h-5 text-blue-500" />;
         }
@@ -124,7 +206,12 @@ const Notifications = () => {
         <div className="max-w-4xl mx-auto py-12 px-6 font-outfit">
             <div className="flex items-center justify-between mb-12">
                 <div>
-                    <h1 className="text-4xl font-black text-surface-900 dark:text-surface-100 tracking-tight mb-2">Notifications</h1>
+                    <h1 className="text-4xl font-black text-surface-900 dark:text-surface-100 tracking-tight mb-2 flex items-center gap-4">
+                        Notifications
+                        <span className="text-[10px] font-black bg-primary-50 text-primary-600 px-3 py-1 rounded-full border border-primary-100 uppercase tracking-[0.2em] animate-pulse">
+                            ● Live Sync
+                        </span>
+                    </h1>
                     <p className="text-sm font-bold text-muted uppercase tracking-widest">Stay updated with your latest alerts</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -165,9 +252,9 @@ const Notifications = () => {
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            onClick={() => handleRead(notif.id, notif.isRead)}
+                                            onClick={() => handleNotificationClick(notif)}
                                             className={`group relative flex items-start gap-6 p-6 rounded-[2.5rem] cursor-pointer transition-all border ${
-                                                notif.isRead 
+                                                (notif.isRead || notif.read)
                                                     ? 'bg-surface-50 dark:bg-surface-900/50 border-surface-200 dark:border-surface-700/50 hover:bg-surface-50 dark:hover:bg-surface-900/80' 
                                                     : 'bg-surface-50 dark:bg-surface-900 border-blue-600/20 shadow-[0_8px_30px_rgba(37,99,235,0.06)]'
                                             }`}

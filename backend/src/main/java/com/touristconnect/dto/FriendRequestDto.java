@@ -7,6 +7,7 @@ public class FriendRequestDto {
     private Long id;
     private Long senderId;
     private String senderName;
+    private String senderProfilePictureUrl;
     private Long receiverId;
     private String receiverName;
     private FriendRequestStatus status;
@@ -15,11 +16,12 @@ public class FriendRequestDto {
     public FriendRequestDto() {
     }
 
-    public FriendRequestDto(Long id, Long senderId, String senderName, Long receiverId, String receiverName,
+    public FriendRequestDto(Long id, Long senderId, String senderName, String senderProfilePictureUrl, Long receiverId, String receiverName,
             FriendRequestStatus status, LocalDateTime sentAt) {
         this.id = id;
         this.senderId = senderId;
         this.senderName = senderName;
+        this.senderProfilePictureUrl = senderProfilePictureUrl;
         this.receiverId = receiverId;
         this.receiverName = receiverName;
         this.status = status;
@@ -48,6 +50,14 @@ public class FriendRequestDto {
 
     public void setSenderName(String senderName) {
         this.senderName = senderName;
+    }
+
+    public String getSenderProfilePictureUrl() {
+        return senderProfilePictureUrl;
+    }
+
+    public void setSenderProfilePictureUrl(String senderProfilePictureUrl) {
+        this.senderProfilePictureUrl = senderProfilePictureUrl;
     }
 
     public Long getReceiverId() {

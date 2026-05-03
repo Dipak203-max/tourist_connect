@@ -53,56 +53,6 @@ const StepCard = ({ number, title, description }) => (
   </div>
 );
 
-const DestinationCard = ({ image, title, rating, price, location }) => (
-  <motion.div 
-    whileHover={{ y: -10 }}
-    className="card rounded-[2rem] overflow-hidden group cursor-pointer shadow-premium"
-  >
-    <div className="relative h-64 overflow-hidden">
-      <img src={image} alt={title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
-        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-        <span className="text-sm font-black text-surface-900">{rating}</span>
-      </div>
-      <div className="absolute bottom-4 left-4 right-4 bg-black/30 backdrop-blur-md border border-white/20 p-4 rounded-2xl text-white opacity-0 transform translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
-         <p className="text-xs font-bold uppercase tracking-widest text-primary-100">Live Experience</p>
-         <h4 className="text-lg font-black truncate">{title}</h4>
-      </div>
-    </div>
-    <div className="p-6">
-      <div className="flex items-center gap-1.5 text-primary-600 font-bold text-xs uppercase tracking-wider mb-2">
-        <MapPin className="w-3.5 h-3.5" />
-        {location}
-      </div>
-      <div className="flex justify-between items-center">
-        <div>
-          <span className="text-2xl font-black text-surface-900 dark:text-white">${price}</span>
-          <span className="text-muted text-sm font-semibold ml-1">/ trip</span>
-        </div>
-        <button className="p-3 bg-surface-50 dark:bg-surface-800 rounded-xl group-hover:bg-primary-600 group-hover:text-white transition-colors">
-          <ArrowRight className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
-  </motion.div>
-);
-
-const TestimonialCard = ({ content, author, role, avatar }) => (
-  <div className="card p-8 rounded-3xl shadow-premium relative">
-    <div className="mb-6 flex gap-1">
-      {[1,2,3,4,5].map(i => <Star key={i} className="w-4 h-4 text-amber-500 fill-amber-500" />)}
-    </div>
-    <p className="text-lg font-medium text-surface-700 dark:text-surface-200 leading-relaxed mb-8">"{content}"</p>
-    <div className="flex items-center gap-4">
-      <img src={avatar} alt={author} className="w-12 h-12 rounded-full object-cover ring-2 ring-primary-100 p-0.5" />
-      <div>
-        <h4 className="font-black text-surface-900 dark:text-white">{author}</h4>
-        <p className="text-xs font-bold text-muted uppercase tracking-widest">{role}</p>
-      </div>
-    </div>
-  </div>
-);
-
 // --- Main Page ---
 
 const LandingPage = () => {
@@ -137,29 +87,14 @@ const LandingPage = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link to="/explore" className="w-full sm:w-auto button-primary px-10 py-5 rounded-3xl text-lg flex items-center justify-center gap-3 shadow-xl shadow-primary-500/30 group">
+                <Link to="/find-guides" className="w-full sm:w-auto button-primary px-10 py-5 rounded-3xl text-lg flex items-center justify-center gap-3 shadow-xl shadow-primary-500/30 group">
                   Explore Guides <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <Link to="/become-guide" className="w-full sm:w-auto px-10 py-5 rounded-3xl text-lg font-black border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800 flex items-center justify-center gap-3 transition-all">
+                <Link to="/register?role=GUIDE" className="w-full sm:w-auto px-10 py-5 rounded-3xl text-lg font-black border border-surface-200 dark:border-surface-800 bg-white dark:bg-surface-900 hover:bg-surface-50 dark:hover:bg-surface-800 flex items-center justify-center gap-3 transition-all">
                   Become a Guide
                 </Link>
               </div>
 
-              {/* Stats/Social Proof */}
-              <div className="mt-20 pt-10 border-t border-surface-100 dark:border-surface-900 flex flex-wrap justify-center items-center gap-12 md:gap-20">
-                <div className="text-center">
-                  <p className="text-4xl font-black text-surface-900 dark:text-white mb-1">50k+</p>
-                  <p className="text-xs font-bold text-muted uppercase tracking-widest">Active Tourists</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-4xl font-black text-surface-900 dark:text-white mb-1">1,200+</p>
-                  <p className="text-xs font-bold text-muted uppercase tracking-widest">Local Experts</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-4xl font-black text-surface-900 dark:text-white mb-1">4.9/5</p>
-                  <p className="text-xs font-bold text-muted uppercase tracking-widest">Avg. Rating</p>
-                </div>
-              </div>
             </motion.div>
           </div>
         </div>
@@ -280,76 +215,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Popular Destinations Preview */}
-      <section className="py-24 md:py-32 bg-surface-100 dark:bg-surface-900/30">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="flex items-center justify-between mb-16">
-            <div>
-              <h2 className="text-3xl md:text-5xl font-black text-surface-900 dark:text-white tracking-tight">Top Destinations</h2>
-              <p className="text-muted font-medium mt-2">Handpicked places where our best guides are waiting.</p>
-            </div>
-            <Link to="/explore" className="hidden sm:flex items-center gap-2 text-primary-600 font-black uppercase tracking-widest text-sm hover:underline">
-              See All <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <DestinationCard 
-              image="https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&q=80&w=800"
-              title="Sacred Temples Journey"
-              location="Kathmandu, Nepal"
-              rating={4.9}
-              price={120}
-            />
-            <DestinationCard 
-              image="https://images.unsplash.com/photo-1524230659194-06ac90327453?auto=format&fit=crop&q=80&w=800"
-              title="Old Town Secret Spots"
-              location="Prague, Czechia"
-              rating={4.8}
-              price={85}
-            />
-            <DestinationCard 
-              image="https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&q=80&w=800"
-              title="Iconic Coastline Walk"
-              location="Sydney, Australia"
-              rating={4.9}
-              price={150}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-24 md:py-32">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <div className="text-center mb-20">
-                <h2 className="text-sm font-black text-primary-600 uppercase tracking-[0.2em] mb-4">Community Love</h2>
-                <h3 className="text-4xl md:text-6xl font-black text-surface-900 dark:text-white tracking-tight">Trusted by thousands</h3>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <TestimonialCard 
-                    content="The best travel decision I ever made. Connecting with Sarah in Tokyo gave me insights I could never find in a guidebook."
-                    author="Alex Johnson"
-                    role="Solo Traveler"
-                    avatar="https://i.pravatar.cc/150?u=alex"
-                />
-                <TestimonialCard 
-                    content="Booking was effortless. Our guide for the Himalayas was incredibly professional and knew the best sunrise spots."
-                    author="Elena Rossi"
-                    role="Adventure Seeker"
-                    avatar="https://i.pravatar.cc/150?u=elena"
-                />
-                <TestimonialCard 
-                    content="As a guide, this platform has changed my life. I can share my culture with people from all over the world securely."
-                    author="David Chen"
-                    role="Local Expert"
-                    avatar="https://i.pravatar.cc/150?u=david"
-                />
-            </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-20 max-w-7xl mx-auto px-6 md:px-12">
         <div className="relative overflow-hidden bg-primary-600 rounded-[3rem] p-12 md:p-24 text-center">
@@ -363,7 +228,7 @@ const LandingPage = () => {
                     <Link to="/register" className="w-full sm:w-auto bg-white text-primary-600 px-12 py-5 rounded-[2rem] text-xl font-bold shadow-2xl hover:scale-105 transition-transform">
                         Get Started Free
                     </Link>
-                    <Link to="/register" className="w-full sm:w-auto text-white px-8 py-5 border border-white/30 rounded-[2rem] text-lg font-bold hover:bg-white/10 transition-all">
+                    <Link to="/register?role=GUIDE" className="w-full sm:w-auto text-white px-8 py-5 border border-white/30 rounded-[2rem] text-lg font-bold hover:bg-white/10 transition-all">
                         Become a Guide
                     </Link>
                 </div>
@@ -400,30 +265,25 @@ const LandingPage = () => {
                 <div>
                     <h4 className="font-black text-surface-900 dark:text-white mb-6 uppercase text-sm tracking-widest">Platform</h4>
                     <ul className="space-y-4">
-                        <li><Link to="/register" className="text-muted hover:text-primary-600 transition-colors font-medium">Explore Guides</Link></li>
-                        <li><Link to="/register" className="text-muted hover:text-primary-600 transition-colors font-medium">How it Works</Link></li>
-                        <li><Link to="/register" className="text-muted hover:text-primary-600 transition-colors font-medium">Pricing</Link></li>
-                        <li><Link to="/register" className="text-muted hover:text-primary-600 transition-colors font-medium">Safety First</Link></li>
+                        <li><Link to="/find-guides" className="text-muted hover:text-primary-600 transition-colors font-medium">Explore Guides</Link></li>
+                        <li><Link to="/about" className="text-muted hover:text-primary-600 transition-colors font-medium text-sm">How it Works</Link></li>
+                        <li><Link to="/destinations" className="text-muted hover:text-primary-600 transition-colors font-medium text-sm">Explore Destinations</Link></li>
                     </ul>
                 </div>
 
                 <div>
                     <h4 className="font-black text-surface-900 dark:text-white mb-6 uppercase text-sm tracking-widest">Company</h4>
                     <ul className="space-y-4">
-                        <li><Link to="/about" className="text-muted hover:text-primary-600 transition-colors font-medium">About Us</Link></li>
-                        <li><Link to="/careers" className="text-muted hover:text-primary-600 transition-colors font-medium">Careers</Link></li>
-                        <li><Link to="/blog" className="text-muted hover:text-primary-600 transition-colors font-medium">Travel Blog</Link></li>
-                        <li><Link to="/contact" className="text-muted hover:text-primary-600 transition-colors font-medium">Contact</Link></li>
+                        <li><Link to="/about" className="text-muted hover:text-primary-600 transition-colors font-medium text-sm">About Us</Link></li>
+                        <li><Link to="/contact" className="text-muted hover:text-primary-600 transition-colors font-medium text-sm">Contact Us</Link></li>
                     </ul>
                 </div>
 
                 <div>
-                    <h4 className="font-black text-surface-900 dark:text-white mb-6 uppercase text-sm tracking-widest">Support</h4>
+                    <h4 className="font-black text-surface-900 dark:text-white mb-6 uppercase text-sm tracking-widest">Legal</h4>
                     <ul className="space-y-4">
-                        <li><Link to="/help" className="text-muted hover:text-primary-600 transition-colors font-medium">Help Center</Link></li>
-                        <li><Link to="/privacy" className="text-muted hover:text-primary-600 transition-colors font-medium">Privacy Policy</Link></li>
-                        <li><Link to="/terms" className="text-muted hover:text-primary-600 transition-colors font-medium">Terms of Service</Link></li>
-                        <li><Link to="/trust" className="text-muted hover:text-primary-600 transition-colors font-medium">Trust & Safety</Link></li>
+                        <li><Link to="/privacy" className="text-muted hover:text-primary-600 transition-colors font-medium text-sm">Privacy Policy</Link></li>
+                        <li><Link to="/terms" className="text-muted hover:text-primary-600 transition-colors font-medium text-sm">Terms of Service</Link></li>
                     </ul>
                 </div>
             </div>

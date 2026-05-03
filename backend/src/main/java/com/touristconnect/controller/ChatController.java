@@ -60,7 +60,7 @@ public class ChatController {
         messagingTemplate.convertAndSend("/topic/group-chat/" + saved.getGroupId(), saved);
 
         // Send real-time notification to each member
-        ChatGroup group = chatService.getGroupById(saved.getGroupId());
+        ChatGroup group = chatService.getGroupWithMembers(saved.getGroupId());
 
             for (User member : group.getMembers()) {
                 if (!member.getId().equals(saved.getSenderId())) {

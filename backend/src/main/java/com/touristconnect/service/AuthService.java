@@ -61,7 +61,7 @@ if (existingUser != null) {
     if (existingUser.isEnabled()) {
         throw new RuntimeException("Email already in use");
     } else {
-        // 🔁 RESEND OTP for unverified user
+        // RESEND OTP for unverified user
         validatePasswordComplexity(request.getPassword());
 
         existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -90,7 +90,7 @@ if (existingUser != null) {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(request.getRole());
         user.setAuthProvider(AuthProvider.LOCAL);
-        user.setEnabled(false); // Disabled until OTP verification
+        user.setEnabled(false); 
 
         // Generate OTP
         String otp = String.format("%06d", new Random().nextInt(999999));
@@ -142,9 +142,9 @@ if (existingUser != null) {
 
         User user = userRepository.findByPhoneNumber(request.getPhoneNumber()).orElse(new User());
         user.setPhoneNumber(request.getPhoneNumber());
-        user.setRole(Role.TOURIST); // Default role for phone registration
+        user.setRole(Role.TOURIST); 
         user.setAuthProvider(AuthProvider.LOCAL);
-        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); // Random password for phone users
+        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString())); 
         user.setEnabled(false);
 
         // Generate OTP
@@ -218,6 +218,7 @@ if (existingUser != null) {
             if (user == null) {
                 user = new User();
                 user.setEmail(email);
+                user.setFullName(name);
                 user.setRole(Role.TOURIST);
                 user.setAuthProvider(AuthProvider.GOOGLE);
                 user.setProviderId(googleUserId);
@@ -231,16 +232,24 @@ if (existingUser != null) {
                         user,
                         user.getId().toString());
             } else {
-                // Update provider details if it was previously LOCAL but now using GOOGLE
+                // Update missing full name or provider details
+                boolean needsUpdate = false;
+                if (user.getFullName() == null) {
+                    user.setFullName(name);
+                    needsUpdate = true;
+                }
                 if (user.getAuthProvider() == AuthProvider.LOCAL) {
                     user.setAuthProvider(AuthProvider.GOOGLE);
                     user.setProviderId(googleUserId);
+                    needsUpdate = true;
+                }
+                if (needsUpdate) {
                     userService.saveUser(user);
                 }
             }
 
             String jwt = jwtUtil.generateToken(user.getEmail(), user.getRole().name(), user.getAuthProvider().name(),
-                    user.getId());
+                    user.getId(), user.getTokenVersion());
             return new AuthResponse(jwt, user.getRole());
         } catch (Exception e) {
             throw new RuntimeException("Google Login Failed: " + e.getMessage());
@@ -251,14 +260,15 @@ if (existingUser != null) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String token = UUID.randomUUID().toString();
+        // Generate 6-digit OTP instead of UUID for better UX
+        String otp = String.format("%06d", new Random().nextInt(999999));
 
-        user.setOtp(token);
+        user.setOtp(otp);
         user.setOtpExpiry(LocalDateTime.now().plusMinutes(15));
         userService.saveUser(user);
 
-        emailService.sendResetTokenEmail(user.getEmail(), token);
-        return "Password reset link sent to email.";
+        emailService.sendResetTokenEmail(user.getEmail(), otp);
+        return "Password reset OTP sent to email.";
     }
 
     public String resetPassword(ResetPasswordRequest request) {
@@ -274,9 +284,27 @@ if (existingUser != null) {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setOtp(null);
         user.setOtpExpiry(null);
+        user.setTokenVersion(user.getTokenVersion() + 1); 
         userService.saveUser(user);
 
         return "Password reset successful";
+    }
+
+    public String changePassword(String email, ChangePasswordRequest request) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+            throw new RuntimeException("Incorrect current password");
+        }
+
+        validatePasswordComplexity(request.getNewPassword());
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1); 
+        userService.saveUser(user);
+
+        return "Password changed successfully";
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -291,7 +319,7 @@ if (existingUser != null) {
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name(), user.getAuthProvider().name(),
-                user.getId());
+                user.getId(), user.getTokenVersion());
         return new AuthResponse(token, user.getRole());
     }
 

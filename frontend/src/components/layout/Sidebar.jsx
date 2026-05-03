@@ -11,6 +11,7 @@ import {
     MessageSquare,
     Bell,
     Users,
+    UserPlus,
     BookOpen,
     Flag,
     ClipboardList,
@@ -27,7 +28,7 @@ import {
 
 const Sidebar = () => {
     const { user } = useContext(AuthContext);
-    const { unreadCount, totalChatUnread } = useChat();
+    const { unreadCount, groupUnreadCount, totalChatUnread } = useChat();
     const { favoriteCount } = useFavorites();
     const [isCollapsed, setIsCollapsed] = useState(false);
     const location = useLocation();
@@ -48,6 +49,7 @@ const Sidebar = () => {
             { name: 'Dashboard', path: '/guide', icon: LayoutDashboard },
             { name: 'Verification', path: '/guide/verification', icon: ShieldCheck },
             { name: 'Profile', path: '/guide/profile', icon: UserCircle },
+            { name: 'Friends', path: '/friends', icon: UserPlus },
             { name: 'Groups', path: '/guide/groups', icon: Users },
             { name: 'Chat', path: '/chat', icon: MessageSquare },
             { name: 'Notifications', path: '/notifications', icon: Bell },
@@ -57,6 +59,7 @@ const Sidebar = () => {
         TOURIST: [
             { name: 'Dashboard', path: '/tourist', icon: LayoutDashboard },
             { name: 'My Profile', path: '/profile', icon: UserCircle },
+            { name: 'Friends', path: '/friends', icon: UserPlus },
             { name: 'Stories', path: '/stories', icon: BookOpen },
             { name: 'Chat', path: '/chat', icon: MessageSquare },
             { name: 'Notifications', path: '/notifications', icon: Bell },
@@ -145,7 +148,11 @@ const Sidebar = () => {
                             )}
 
                             {/* Badge for Collapsed State */}
-                            {isCollapsed && (item.name === 'Notifications' && unreadCount > 0 || item.name === 'Chat' && totalChatUnread > 0) && (
+                            {isCollapsed && (
+                                (item.name === 'Notifications' && unreadCount > 0) || 
+                                (item.name === 'Chat' && totalChatUnread > 0) || 
+                                (item.name === 'Groups' && groupUnreadCount > 0)
+                            ) && (
                                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-surface-900" />
                             )}
 
@@ -165,6 +172,11 @@ const Sidebar = () => {
                                     {item.name === 'Favorites' && favoriteCount > 0 && (
                                         <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-lg">
                                             {favoriteCount}
+                                        </span>
+                                    )}
+                                    {item.name === 'Groups' && groupUnreadCount > 0 && (
+                                        <span className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-lg">
+                                            {groupUnreadCount}
                                         </span>
                                     )}
                                 </div>

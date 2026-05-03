@@ -101,7 +101,7 @@ public class ProfileService {
                                         newProfile.setBio("");
                                         newProfile.setLocation("");
                                         newProfile.setInterests(java.util.Collections.emptyList());
-                                        // Save to ensure subsequent calls find it
+                                        
                                         return userProfileRepository.save(newProfile);
                                 });
 

@@ -37,7 +37,7 @@ const PublicNavbar = () => {
         <div className="hidden md:flex items-center gap-8">
           <Link to="/destinations" className="text-sm font-semibold text-surface-600 dark:text-surface-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Explore</Link>
           <Link to="/about" className="text-sm font-semibold text-surface-600 dark:text-surface-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">About</Link>
-          <Link to="/register" className="text-sm font-semibold text-surface-600 dark:text-surface-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Become a Guide</Link>
+          <Link to="/register?role=GUIDE" className="text-sm font-semibold text-surface-600 dark:text-surface-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">Become a Guide</Link>
           <div className="h-6 w-px bg-surface-200 dark:bg-surface-800 mx-2"></div>
           <Link to="/login" className="text-sm font-bold text-surface-700 dark:text-surface-200 hover:text-primary-600 transition-colors">Login</Link>
           <Link to="/register" className="button-primary px-6 py-2.5 rounded-full text-sm shadow-lg shadow-primary-500/20">Sign Up</Link>

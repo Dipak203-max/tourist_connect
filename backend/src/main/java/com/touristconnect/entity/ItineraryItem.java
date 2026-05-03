@@ -15,16 +15,16 @@ public class ItineraryItem {
     private ItineraryDay itineraryDay;
 
     @Enumerated(EnumType.STRING)
-    private ItemType type; // PLACE, GUIDE, ACTIVITY
+    private ItemType type; 
 
     @Column(name = "reference_id")
-    private Long referenceId; // ID of the Guide/Place
+    private Long referenceId; 
 
     @Column(name = "description")
-    private String description; // Name of the place/guide for display
+    private String description; 
 
     @Column(name = "time_slot")
-    private String timeSlot; // e.g., "10:00 AM"
+    private String timeSlot; 
 
     @Column(name = "pinned")
     private Boolean pinned = false;
@@ -42,7 +42,7 @@ public class ItineraryItem {
         this.referenceId = referenceId;
         this.description = description;
         this.timeSlot = timeSlot;
-        this.pinned = false; // Default
+        this.pinned = false; 
     }
 
     public ItineraryItem(ItemType type, Long referenceId, String description, String timeSlot, Boolean pinned) {

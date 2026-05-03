@@ -11,7 +11,7 @@ const ResetPassword = () => {
     // Let's assume user visits that link.
     // If token is missing, show input?
 
-    const [inputToken, setInputToken] = useState(token || '');
+    const [inputOtp, setInputOtp] = useState(token || '');
     const [newPassword, setNewPassword] = useState('');
     const { resetPassword } = useContext(AuthContext);
     const navigate = useNavigate();
@@ -21,11 +21,11 @@ const ResetPassword = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await resetPassword(inputToken, newPassword);
+            await resetPassword(inputOtp, newPassword);
             setMessage('Password reset successful! Redirecting to login...');
             setTimeout(() => navigate('/login'), 2000);
         } catch (err) {
-            setError('Reset failed. Token expired or password weak (Min 8 chars, 1 Upper, 1 Lower, 1 Num, 1 Special).');
+            setError('Reset failed. OTP expired or password weak (Min 8 chars, 1 Upper, 1 Lower, 1 Num, 1 Special).');
         }
     };
 
@@ -37,8 +37,8 @@ const ResetPassword = () => {
                 {error && <p className="text-red-500 mb-4 text-sm text-center">{error}</p>}
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block text-gray-700 mb-2">Token</label>
-                        <input type="text" value={inputToken} onChange={(e) => setInputToken(e.target.value)} className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="Paste token here" />
+                        <label className="block text-gray-700 mb-2">OTP Code</label>
+                        <input type="text" value={inputOtp} onChange={(e) => setInputOtp(e.target.value)} className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="Enter 6-digit OTP" />
                     </div>
                     <div className="mb-6">
                         <label className="block text-gray-700 mb-2">New Password</label>
